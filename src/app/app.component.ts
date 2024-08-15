@@ -2,7 +2,7 @@ import { Component, Inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { CAMERA_SERVICE_TOKEN } from './services/camera.service';
 import { CameraServiceImpl } from './services/impl/camera-impl.service';
-import { interval, map, Observable, switchMap } from 'rxjs';
+import { distinctUntilChanged, exhaustMap, interval, map, Observable, switchMap } from 'rxjs';
 import { Camera } from './model/camera.model';
 import { OSM_SERVICE_TOKEN } from './services/osm.service';
 import { OsmServiceLocalImpl } from './services/impl/osm-local-impl.service';
@@ -30,12 +30,16 @@ export class AppComponent {
   }
 
   ngOnInit(): void {
-    this.cameraInfo$ = interval(10000).pipe(
-      switchMap(() => this.getCurrentPosition()),
-      switchMap(coords => this.cameraService.getClosetCamera(coords.latitude, coords.longitude)),
-      map(({camera, distance}) => {
-        return {maxSpeed: camera.maxSpeed, distance: distance}
-      })
+    this.cameraInfo$ = this.getCurrentPosition().pipe(
+      distinctUntilChanged((prev, curr) => prev.latitude === curr.latitude && prev.longitude === curr.longitude),
+      exhaustMap(coords => 
+        this.cameraService.getClosestCamera(coords.latitude, coords.longitude).pipe(
+          map(({ camera, distance }) => ({
+            maxSpeed: camera.maxSpeed,
+            distance: distance
+          }))
+        )
+      )
     );
   }
 
@@ -51,21 +55,25 @@ export class AppComponent {
     }
   }
 
-  // Method to get current GPS position
   getCurrentPosition(): Observable<GeolocationCoordinates> {
-    console.log('Getting current position');
     return new Observable<GeolocationCoordinates>(observer => {
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          position => {
-            observer.next(position.coords);
-            observer.complete();
-          },
-          error => observer.error(error)
-        );
-      } else {
-        observer.error('Geolocation not available');
-      }
+        if (navigator.geolocation) {
+            const watchId = navigator.geolocation.watchPosition(
+                position => {
+                    observer.next(position.coords);
+                },
+                error => observer.error(error),
+                { enableHighAccuracy: true }
+            );
+
+            // Cleanup when the observable is unsubscribed
+            return () => navigator.geolocation.clearWatch(watchId);
+        } else {
+            observer.error('Geolocation not available');
+            
+            // Even though this code path is an error, we must return a cleanup function.
+            return () => {}; // No-op cleanup function
+        }
     });
-  }
+}
 }

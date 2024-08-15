@@ -12,7 +12,7 @@ export class CameraServiceImpl implements CameraService {
 
   constructor(@Inject(OSM_SERVICE_TOKEN) private osmService: OsmService) { }
 
-  public getClosetCamera(lat: number, lon: number): Observable<{camera: Camera, distance: number}> {
+  public getClosestCamera(lat: number, lon: number): Observable<{camera: Camera, distance: number}> {
     console.log('Getting closest camera to', lat, lon);
     return this.osmService.getOsmData().pipe(
       map((osmData: OsmData) => {
@@ -24,7 +24,6 @@ export class CameraServiceImpl implements CameraService {
           }
           let distance = this.computeDistance(lat, lon, element.lat, element.lon);
           if (distance < minDistance) {
-            console.log('Found closer element', element);
             minDistance = distance;
             closestCamera = new Camera(element.lat, element.lon, +element.tags.maxspeed);
           }

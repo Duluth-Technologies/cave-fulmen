@@ -6,6 +6,6 @@ export const CAMERA_SERVICE_TOKEN = new InjectionToken<CameraService>('CameraSer
 
 export interface CameraService {
 
-  getClosetCamera(lat: number, lon: number): Observable<{camera: Camera, distance: number}>;
+  getClosestCamera(lat: number, lon: number): Observable<{camera: Camera, distance: number}>;
 
 }
