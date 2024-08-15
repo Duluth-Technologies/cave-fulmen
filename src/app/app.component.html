@@ -1,0 +1,10 @@
+<div class="radar-info-container" *ngIf="cameraInfo$ | async as cameraInfo">
+  <div class="distance-display">
+    {{ computeDistanceString(cameraInfo.distance) }}
+  </div>
+  <div *ngIf="cameraInfo.distance <= speedLimitThreshold" class="speed-limit-display">
+    <div class="speed-limit-circle">
+      {{ cameraInfo.maxSpeed }}
+    </div>
+  </div>
+</div>

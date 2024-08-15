@@ -1,0 +1,71 @@
+import { Component, Inject } from '@angular/core';
+import { RouterOutlet } from '@angular/router';
+import { CAMERA_SERVICE_TOKEN } from './services/camera.service';
+import { CameraServiceImpl } from './services/impl/camera-impl.service';
+import { interval, map, Observable, switchMap } from 'rxjs';
+import { Camera } from './model/camera.model';
+import { OSM_SERVICE_TOKEN } from './services/osm.service';
+import { OsmServiceLocalImpl } from './services/impl/osm-local-impl.service';
+import {provideHttpClient } from '@angular/common/http';
+import { CommonModule } from '@angular/common';
+
+@Component({
+  selector: 'app-root',
+  standalone: true,
+  imports: [RouterOutlet, CommonModule],
+  templateUrl: './app.component.html',
+  styleUrl: './app.component.css',
+  providers: [
+    { provide: CAMERA_SERVICE_TOKEN, useClass: CameraServiceImpl },
+    { provide: OSM_SERVICE_TOKEN, useClass: OsmServiceLocalImpl }
+  ],
+})
+export class AppComponent {
+  title = 'cavefulmen';
+  speedLimitThreshold = 4;
+  cameraInfo$!: Observable<{maxSpeed: number, distance: number}>;
+
+
+  constructor(@Inject(CAMERA_SERVICE_TOKEN) private cameraService: CameraServiceImpl) {    
+  }
+
+  ngOnInit(): void {
+    this.cameraInfo$ = interval(10000).pipe(
+      switchMap(() => this.getCurrentPosition()),
+      switchMap(coords => this.cameraService.getClosetCamera(coords.latitude, coords.longitude)),
+      map(({camera, distance}) => {
+        return {maxSpeed: camera.maxSpeed, distance: distance}
+      })
+    );
+  }
+
+  computeDistanceString(distanceInKilometers: number): string {
+    if (distanceInKilometers >= 1) {
+      // If the distance is 1 km or more, round to the nearest km
+      return `${Math.round(distanceInKilometers)} km`;
+    } else {
+      // If the distance is less than 1 km, convert to meters and round to the nearest 100 meters
+      const distanceInMeters = distanceInKilometers * 1000;
+      const roundedMeters = Math.floor(distanceInMeters / 100) * 100;
+      return `${roundedMeters} m`;
+    }
+  }
+
+  // Method to get current GPS position
+  getCurrentPosition(): Observable<GeolocationCoordinates> {
+    console.log('Getting current position');
+    return new Observable<GeolocationCoordinates>(observer => {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          position => {
+            observer.next(position.coords);
+            observer.complete();
+          },
+          error => observer.error(error)
+        );
+      } else {
+        observer.error('Geolocation not available');
+      }
+    });
+  }
+}
