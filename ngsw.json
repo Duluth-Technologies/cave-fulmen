@@ -1,6 +1,6 @@
 {
   "configVersion": 1,
-  "timestamp": 1723756041494,
+  "timestamp": 1723757048102,
   "index": "/cave-fulmen/index.html",
   "assetGroups": [
     {
@@ -51,7 +51,7 @@
     "/cave-fulmen/icons/icon-512x512.png": "1de182f76f7329dfa8f9fcdd1fdcdd695bea6a99",
     "/cave-fulmen/icons/icon-72x72.png": "aa88a6096bd973be7f6d7a5489bfa6bc2463f8c4",
     "/cave-fulmen/icons/icon-96x96.png": "7fb8f59c30ce2ff12c700321a0b39e14b3dc8f95",
-    "/cave-fulmen/index.html": "d93b1bd99a9ebf1e82757d04b1449fc46e70c21e",
+    "/cave-fulmen/index.html": "1ecf404345fec4d99cfe05f7d5cea27cca7e847b",
     "/cave-fulmen/main-7JCKZMJX.js": "87897445fb290c0e116ab24c076529cfea9799ea",
     "/cave-fulmen/manifest.webmanifest": "f0f5792246706192d9f9aa681c7c9f83115408b0",
     "/cave-fulmen/polyfills-SCHOHYNV.js": "d45c76c5960bab3ace7fd6d211b9579456241f8a",
