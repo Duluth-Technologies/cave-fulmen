@@ -49,7 +49,7 @@ export class AppComponent {
       return `${Math.round(distanceInKilometers)} km`;
     } else {
       // If the distance is less than 1 km, convert to meters and round to the nearest 100 meters
-      const distanceInMeters = distanceInKilometers * 1000;      
+      const distanceInMeters = Math.floor(distanceInKilometers * 1000);      
       return `${distanceInMeters} m`;
     }
   }
