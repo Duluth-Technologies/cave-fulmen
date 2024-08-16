@@ -59,7 +59,8 @@ export class AppComponent {
         if (navigator.geolocation) {
             const watchId = navigator.geolocation.watchPosition(
                 position => {
-                    observer.next(position.coords);
+                  console.log('Position:', position.coords);
+                  observer.next(position.coords);
                 },
                 error => observer.error(error),
                 { enableHighAccuracy: true,
