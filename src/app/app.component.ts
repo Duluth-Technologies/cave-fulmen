@@ -62,7 +62,10 @@ export class AppComponent {
                     observer.next(position.coords);
                 },
                 error => observer.error(error),
-                { enableHighAccuracy: true }
+                { enableHighAccuracy: true,
+                  maximumAge: 0,
+                  timeout: 30000
+                 }
             );
 
             // Cleanup when the observable is unsubscribed
