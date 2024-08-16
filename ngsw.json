@@ -1,6 +1,6 @@
 {
   "configVersion": 1,
-  "timestamp": 1723841976575,
+  "timestamp": 1723842442765,
   "index": "/cave-fulmen/index.html",
   "assetGroups": [
     {
@@ -22,35 +22,21 @@
     },
     {
       "name": "assets",
-      "installMode": "lazy",
+      "installMode": "prefetch",
       "updateMode": "prefetch",
       "cacheQueryOptions": {
         "ignoreVary": true
       },
       "urls": [
-        "/cave-fulmen/icons/icon-128x128.png",
-        "/cave-fulmen/icons/icon-144x144.png",
-        "/cave-fulmen/icons/icon-152x152.png",
-        "/cave-fulmen/icons/icon-192x192.png",
-        "/cave-fulmen/icons/icon-384x384.png",
-        "/cave-fulmen/icons/icon-512x512.png",
-        "/cave-fulmen/icons/icon-72x72.png",
-        "/cave-fulmen/icons/icon-96x96.png"
+        "/cave-fulmen/assets/data/speed_cameras.json"
       ],
       "patterns": []
     }
   ],
   "dataGroups": [],
   "hashTable": {
+    "/cave-fulmen/assets/data/speed_cameras.json": "c48a1ca105fa86d3beae6160e8b30fe2cf973f12",
     "/cave-fulmen/favicon.ico": "9c39f434fe1261f68c5e3eefdf734630d99c5670",
-    "/cave-fulmen/icons/icon-128x128.png": "f912963bdc6d5a38d8f1dd0afbaab2ce8d657acb",
-    "/cave-fulmen/icons/icon-144x144.png": "b155fd5f2fd5d2ea7760721063003c4cd95fd783",
-    "/cave-fulmen/icons/icon-152x152.png": "eae6e0f0c8afb8aaae339e2a569b43e9238e5e6c",
-    "/cave-fulmen/icons/icon-192x192.png": "15c4180454633880d98674aa7394656196c91584",
-    "/cave-fulmen/icons/icon-384x384.png": "94a915751ef6c9282df9aea405ad679230631814",
-    "/cave-fulmen/icons/icon-512x512.png": "1de182f76f7329dfa8f9fcdd1fdcdd695bea6a99",
-    "/cave-fulmen/icons/icon-72x72.png": "aa88a6096bd973be7f6d7a5489bfa6bc2463f8c4",
-    "/cave-fulmen/icons/icon-96x96.png": "7fb8f59c30ce2ff12c700321a0b39e14b3dc8f95",
     "/cave-fulmen/index.html": "3c8929868163c006644a2ffa9212a69e88df6dc0",
     "/cave-fulmen/main-GJ425WL6.js": "3ddf6285c55c4297e34db9acdd0e18aa20983ee8",
     "/cave-fulmen/manifest.webmanifest": "f0f5792246706192d9f9aa681c7c9f83115408b0",
