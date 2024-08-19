@@ -12,14 +12,14 @@ export class CameraServiceImpl implements CameraService {
 
   constructor(@Inject(OSM_SERVICE_TOKEN) private osmService: OsmService) { }
 
-  public getClosestCamera(lat: number, lon: number): Observable<{camera: Camera, distance: number}> {
+  public getClosestCamera(lat: number, lon: number): Observable<{ camera: Camera, distance: number }> {
     console.log('Getting closest camera to', lat, lon);
     return this.osmService.getOsmData().pipe(
       map((osmData: OsmData) => {
         let minDistance = Number.MAX_VALUE;
         let closestCamera: Camera | null = null;
         for (let element of osmData.elements) {
-          if (!element.tags.maxspeed) {
+          if (!('maxspeed' in element.tags)) {
             continue;
           }
           let distance = this.computeDistance(lat, lon, element.lat, element.lon);
@@ -28,7 +28,7 @@ export class CameraServiceImpl implements CameraService {
             closestCamera = new Camera(element.lat, element.lon, +element.tags.maxspeed);
           }
         }
-        return {camera: closestCamera!, distance: minDistance};
+        return { camera: closestCamera!, distance: minDistance };
       })
     );
   }
@@ -43,11 +43,11 @@ export class CameraServiceImpl implements CameraService {
     const rLat2 = toRadians(lat2);
 
     const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-              Math.cos(rLat1) * Math.cos(rLat2) *
-              Math.sin(dLon / 2) * Math.sin(dLon / 2);
+      Math.cos(rLat1) * Math.cos(rLat2) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
     return R * c;
-}
+  }
 
 }

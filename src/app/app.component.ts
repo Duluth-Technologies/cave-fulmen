@@ -22,7 +22,7 @@ import { interval, Observable, of } from 'rxjs';
   ],
 })
 export class AppComponent implements OnInit, OnDestroy {
-  title = 'cavefulmen';
+  wakeLock: any = null;
   speedLimitThreshold = 4;
   cameraInfo$: Observable<{ maxSpeed: number, distance: number } | null> = of(null) ;
   lat: number | null = 0;
@@ -33,7 +33,9 @@ export class AppComponent implements OnInit, OnDestroy {
   constructor(@Inject(CAMERA_SERVICE_TOKEN) private cameraService: CameraServiceImpl) {
   }
 
-  ngOnInit(): void {
+  async ngOnInit() {
+    await this.requestWakeLock();
+    document.addEventListener('visibilitychange', this.handleVisibilityChange.bind(this));
     this.watchPosition();
     this.cameraInfo$ = interval(5000).pipe(
       concatMap(() => {
@@ -53,6 +55,8 @@ export class AppComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.unwatchPosition();
+    this.releaseWakeLock(); 
+    document.removeEventListener('visibilitychange', this.handleVisibilityChange.bind(this));
   }
 
   computeDistanceString(distanceInKilometers: number): string {
@@ -90,6 +94,42 @@ export class AppComponent implements OnInit, OnDestroy {
     if (this.watchId) {
       navigator.geolocation.clearWatch(this.watchId);
       this.watchId = null;
+    }
+  }
+
+  async requestWakeLock() {
+    try {
+      this.wakeLock = await navigator.wakeLock.request('screen');
+      console.log('Screen Wake Lock active');
+    } catch (err) {
+      if (err instanceof Error) {
+        console.error(`${err.name}, ${err.message}`);
+      } else {
+        console.error('Unknown error', err);
+      }
+    }
+  }
+
+  async releaseWakeLock() {
+    if (this.wakeLock !== null) {
+      try {
+        await this.wakeLock.release();
+        this.wakeLock = null;
+        console.log('Screen Wake Lock released');
+      } catch (err) {
+        if (err instanceof Error) {
+          console.error(`${err.name}, ${err.message}`);
+        } else {
+          console.error('Unknown error', err);
+        }
+      }
+    }
+  }
+
+  async handleVisibilityChange() {
+    if (this.wakeLock !== null && document.visibilityState === 'visible') {
+      console.log('Re-requesting wake lock');
+      await this.requestWakeLock();
     }
   }
 

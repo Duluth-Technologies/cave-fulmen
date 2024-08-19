@@ -29,12 +29,12 @@ html, body {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 150px;
-    height: 150px;
+    width: 200px;
+    height: 200px;
     border-radius: 50%;
     background-color: white;
     color: black;
-    border: 15px solid red;
+    border: 25px solid red;
     font-size: 1.5em;
     font-weight: bold;
   }
