@@ -1,20 +1,28 @@
 import { Injectable } from "@angular/core";
 import { OsmService } from "../osm.service";
-import { Observable } from "rxjs";
+import { Observable, shareReplay } from "rxjs";
 import { OsmData } from "../../model/osmData.model";
 import { HttpClient } from "@angular/common/http";
 
 @Injectable({
     providedIn: 'root'
-  })
-  export class OsmServiceLocalImpl implements OsmService {
+})
+export class OsmServiceLocalImpl implements OsmService {
 
     private jsonUrl = 'assets/data/speed_cameras.json';
 
-  
-    constructor(private httpClient: HttpClient) { }
+    // Observable to store the cached response
+    private osmData$: Observable<OsmData>;
+
+    constructor(private httpClient: HttpClient) { 
+        // Initialize the observable and apply shareReplay to cache the result
+        this.osmData$ = this.httpClient.get<OsmData>(this.jsonUrl).pipe(
+            shareReplay(1) // Cache the latest result, allowing replay to any new subscribers
+        );
+    }
+
     getOsmData(): Observable<OsmData> {
-        return this.httpClient.get<any>(this.jsonUrl);
-    }  
-  
-  }
+        // Return the cached observable
+        return this.osmData$;
+    }
+}

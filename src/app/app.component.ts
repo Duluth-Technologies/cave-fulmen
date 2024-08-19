@@ -9,6 +9,8 @@ import { OsmServiceLocalImpl } from './services/impl/osm-local-impl.service';
 import { provideHttpClient } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
 import { interval, Observable, of } from 'rxjs';
+import { WAKE_LOCK_SERVICE_TOKEN } from './services/wake-lock.service';
+import { WakeLockServiceImpl } from './services/impl/wake-lock-impl.service';
 
 @Component({
   selector: 'app-root',
@@ -18,24 +20,23 @@ import { interval, Observable, of } from 'rxjs';
   styleUrl: './app.component.css',
   providers: [
     { provide: CAMERA_SERVICE_TOKEN, useClass: CameraServiceImpl },
-    { provide: OSM_SERVICE_TOKEN, useClass: OsmServiceLocalImpl }
+    { provide: OSM_SERVICE_TOKEN, useClass: OsmServiceLocalImpl },
+    { provide: WAKE_LOCK_SERVICE_TOKEN, useClass: WakeLockServiceImpl },
   ],
 })
 export class AppComponent implements OnInit, OnDestroy {
   wakeLock: any = null;
   speedLimitThreshold = 4;
-  cameraInfo$: Observable<{ maxSpeed: number, distance: number } | null> = of(null) ;
+  cameraInfo$: Observable<{ maxSpeed: number, distance: number } | null> = of(null);
   lat: number | null = 0;
   lon: number | null = 0;
   watchId: number | null = null;
 
 
-  constructor(@Inject(CAMERA_SERVICE_TOKEN) private cameraService: CameraServiceImpl) {
+  constructor(@Inject(CAMERA_SERVICE_TOKEN) private cameraService: CameraServiceImpl, @Inject(WAKE_LOCK_SERVICE_TOKEN) private wakeLockService: WakeLockServiceImpl) {
   }
 
   async ngOnInit() {
-    await this.requestWakeLock();
-    document.addEventListener('visibilitychange', this.handleVisibilityChange.bind(this));
     this.watchPosition();
     this.cameraInfo$ = interval(5000).pipe(
       concatMap(() => {
@@ -53,10 +54,14 @@ export class AppComponent implements OnInit, OnDestroy {
     );
   }
 
+  enableWakeLock(): void {
+    this.wakeLockService.requestWakeLock();
+
+  }
+
   ngOnDestroy(): void {
     this.unwatchPosition();
-    this.releaseWakeLock(); 
-    document.removeEventListener('visibilitychange', this.handleVisibilityChange.bind(this));
+    this.wakeLockService.requestWakeLock();
   }
 
   computeDistanceString(distanceInKilometers: number): string {
@@ -97,40 +102,6 @@ export class AppComponent implements OnInit, OnDestroy {
     }
   }
 
-  async requestWakeLock() {
-    try {
-      this.wakeLock = await navigator.wakeLock.request('screen');
-      console.log('Screen Wake Lock active');
-    } catch (err) {
-      if (err instanceof Error) {
-        console.error(`${err.name}, ${err.message}`);
-      } else {
-        console.error('Unknown error', err);
-      }
-    }
-  }
 
-  async releaseWakeLock() {
-    if (this.wakeLock !== null) {
-      try {
-        await this.wakeLock.release();
-        this.wakeLock = null;
-        console.log('Screen Wake Lock released');
-      } catch (err) {
-        if (err instanceof Error) {
-          console.error(`${err.name}, ${err.message}`);
-        } else {
-          console.error('Unknown error', err);
-        }
-      }
-    }
-  }
-
-  async handleVisibilityChange() {
-    if (this.wakeLock !== null && document.visibilityState === 'visible') {
-      console.log('Re-requesting wake lock');
-      await this.requestWakeLock();
-    }
-  }
 
 }
