@@ -61,7 +61,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.unwatchPosition();
-    this.wakeLockService.requestWakeLock();
+    this.wakeLockService.releaseWakeLock();
   }
 
   computeDistanceString(distanceInKilometers: number): string {
