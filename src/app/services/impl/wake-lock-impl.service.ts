@@ -17,7 +17,7 @@ export class WakeLockServiceImpl implements WakeLockService {
    * Requests a wake lock to keep the screen on.
    */
   public async requestWakeLock() {
-    if ('wakeLock' in navigator && false) {
+    if ('wakeLock' in navigator) {
       try {
         this.wakeLock = await (navigator as any).wakeLock.request('screen');
         console.log('Screen Wake Lock active');
@@ -38,7 +38,7 @@ export class WakeLockServiceImpl implements WakeLockService {
    * Releases the wake lock.
    */
   public async releaseWakeLock() {
-    if (this.wakeLock !== null && false) {
+    if (this.wakeLock !== null) {
       try {
         await this.wakeLock.release();
         this.wakeLock = null;
