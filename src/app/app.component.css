@@ -5,6 +5,18 @@ body {
     /* for IE11 */
 }
 
+.arrow {
+    width: 0; 
+    height: 0; 
+    border-left: 10px solid transparent;
+    border-right: 10px solid transparent;
+    border-bottom: 20px solid black;
+    transform-origin: center center; /* Ensure rotation happens around the center */
+    transition: transform 0.3s ease; /* Optional: smooth rotation */
+  }
+  
+  
+
 .radar-info-container {
     display: flex;
     flex-direction: column;
@@ -16,6 +28,13 @@ body {
 }
 
 .distance-display {
+    font-size: 4em;
+    font-weight: bold;
+    color: black;
+    margin-bottom: 20px;
+}
+
+.speed-display {
     font-size: 4em;
     font-weight: bold;
     color: black;

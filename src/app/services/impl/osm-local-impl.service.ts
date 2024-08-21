@@ -1,7 +1,7 @@
 import { Injectable } from "@angular/core";
 import { OsmService } from "../osm.service";
 import { Observable, shareReplay } from "rxjs";
-import { OsmData } from "../../model/osmData.model";
+import { OsmData } from "../../models/osmData.model";
 import { HttpClient } from "@angular/common/http";
 
 @Injectable({

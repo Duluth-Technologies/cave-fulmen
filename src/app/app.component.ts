@@ -3,7 +3,7 @@ import { RouterOutlet } from '@angular/router';
 import { CAMERA_SERVICE_TOKEN } from './services/camera.service';
 import { CameraServiceImpl } from './services/impl/camera-impl.service';
 import { concatMap, distinctUntilChanged, exhaustMap, map, switchMap } from 'rxjs/operators';
-import { Camera } from './model/camera.model';
+import { Camera } from './models/camera.model';
 import { OSM_SERVICE_TOKEN } from './services/osm.service';
 import { OsmServiceLocalImpl } from './services/impl/osm-local-impl.service';
 import { provideHttpClient } from '@angular/common/http';
@@ -11,6 +11,7 @@ import { CommonModule } from '@angular/common';
 import { interval, Observable, of } from 'rxjs';
 import { WAKE_LOCK_SERVICE_TOKEN } from './services/wake-lock.service';
 import { WakeLockServiceImpl } from './services/impl/wake-lock-impl.service';
+import { computeEastWestOffset, computeNorthSouthOffset } from './utils/distance-util';
 
 @Component({
   selector: 'app-root',
@@ -25,11 +26,22 @@ import { WakeLockServiceImpl } from './services/impl/wake-lock-impl.service';
   ],
 })
 export class AppComponent implements OnInit, OnDestroy {
+  
   wakeLock: any = null;
   speedLimitThreshold = 4;
-  cameraInfo$: Observable<{ maxSpeed: number, distance: number } | null> = of(null);
-  lat: number | null = 0;
-  lon: number | null = 0;
+  cameraInfo$: Observable<{ maxSpeed: number, distance: number; lat: number, lon: number } | null> = of(null);
+
+  lat: number | null = null;
+  lon: number | null = null;
+  precision: number | null = null;
+  timestamp: number | null = null;
+  vx: number | null = null;
+  vy: number | null = null;
+
+  speed: number | null = null;
+  azimut: number | null = null;
+  speedString: string | null = null;
+
   watchId: number | null = null;
 
 
@@ -47,7 +59,9 @@ export class AppComponent implements OnInit, OnDestroy {
         return this.cameraService.getClosestCamera(this.lat, this.lon).pipe(
           map(({ camera, distance }) => ({
             maxSpeed: camera.maxSpeed,
-            distance: distance
+            distance: distance,
+            lat: camera.lat,
+            lon: camera.lon
           }))
         );
       })
@@ -75,13 +89,51 @@ export class AppComponent implements OnInit, OnDestroy {
     }
   }
 
+  computeAngle(lat: number, lon: number) {
+    if (this.lat == null || this.lon == null || this.azimut == null) {
+      return null;
+    }
+    return Math.atan2(lon - this.lon, lat - this.lat) * 180 / Math.PI - this.azimut;
+  }
+
+  setSpeedAndAzimut(): void {
+    if (this.vx == null || this.vy == null) {
+      this.speedString = null;
+      this.azimut = null;
+      return;
+    }
+    this.speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy) * 3.6;
+    this.speedString = `${this.speed.toFixed(0)} km/h`;
+    // We compute the azimut only if the speed is greater than 10 m/s (so 36 km/h)
+    if (this.speed > 10) {
+      console.log('Speed:', this.speed);
+      this.azimut = Math.atan2(this.vy, this.vx) * 180 / Math.PI;
+    } else {
+      this.azimut = null;
+    }
+  }
+
   watchPosition(): void {
     if (navigator.geolocation) {
       const watchId = navigator.geolocation.watchPosition(
         position => {
           console.log('Position:', position.coords);
+          const now = Math.floor(Date.now() / 1000);
+          if (this.lat != null && this.lon != null && this.timestamp != null) {
+            // Compute the speed in m/s
+            const dt = now - this.timestamp;
+            const dx = computeEastWestOffset(this.lat, this.lon, position.coords.longitude);
+            this.vx = dx / dt;
+            const dy = computeNorthSouthOffset(this.lat, position.coords.latitude);
+            this.vy = dy / dt;
+            this.setSpeedAndAzimut();
+          }
+
           this.lat = position.coords.latitude;
           this.lon = position.coords.longitude;
+          this.precision = position.coords.accuracy;
+          // Get current time
+          this.timestamp = Math.floor(Date.now() / 1000);
         },
         error => {
           console.error('Error:', error);

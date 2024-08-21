@@ -1,7 +1,7 @@
 import { Injectable, InjectionToken } from '@angular/core';
-import { Camera } from '../model/camera.model';
+import { Camera } from '../models/camera.model';
 import { Observable } from 'rxjs';
-import { OsmData } from '../model/osmData.model';
+import { OsmData } from '../models/osmData.model';
 
 export const OSM_SERVICE_TOKEN = new InjectionToken<OsmService>('OsmService');
 
