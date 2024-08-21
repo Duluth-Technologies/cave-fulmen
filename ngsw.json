@@ -1,6 +1,6 @@
 {
   "configVersion": 1,
-  "timestamp": 1724102659507,
+  "timestamp": 1724276299705,
   "index": "/cave-fulmen/index.html",
   "assetGroups": [
     {
@@ -13,7 +13,7 @@
       "urls": [
         "/cave-fulmen/favicon.ico",
         "/cave-fulmen/index.html",
-        "/cave-fulmen/main-QIFCRFCN.js",
+        "/cave-fulmen/main-W7GHLHA4.js",
         "/cave-fulmen/manifest.webmanifest",
         "/cave-fulmen/polyfills-SCHOHYNV.js",
         "/cave-fulmen/styles-5INURTSO.css"
@@ -39,8 +39,8 @@
     "/cave-fulmen/assets/blank.mp4": "0a784cccc5813e83f70a38d8fd2ae877c251723b",
     "/cave-fulmen/assets/data/speed_cameras.json": "c48a1ca105fa86d3beae6160e8b30fe2cf973f12",
     "/cave-fulmen/favicon.ico": "9c39f434fe1261f68c5e3eefdf734630d99c5670",
-    "/cave-fulmen/index.html": "18fe64d71548ccbe3af5f90e2927a72d0d66f3d9",
-    "/cave-fulmen/main-QIFCRFCN.js": "3a03dd09b8c8410ea7bdc1d38c5de93b754e33bd",
+    "/cave-fulmen/index.html": "cd147df88bfd38e596ccca5528724158998e5dc5",
+    "/cave-fulmen/main-W7GHLHA4.js": "d220b46d3d54e1ccc2150d98eb7cad1c976ff6f6",
     "/cave-fulmen/manifest.webmanifest": "f0f5792246706192d9f9aa681c7c9f83115408b0",
     "/cave-fulmen/polyfills-SCHOHYNV.js": "d45c76c5960bab3ace7fd6d211b9579456241f8a",
     "/cave-fulmen/styles-5INURTSO.css": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
