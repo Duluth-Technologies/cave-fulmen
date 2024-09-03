@@ -1,7 +1,7 @@
 {
   "configVersion": 1,
-  "timestamp": 1725347364504,
-  "index": "/cave-fulmen/index.html",
+  "timestamp": 1725393613171,
+  "index": "/index.html",
   "assetGroups": [
     {
       "name": "app",
@@ -11,12 +11,12 @@
         "ignoreVary": true
       },
       "urls": [
-        "/cave-fulmen/favicon.ico",
-        "/cave-fulmen/index.html",
-        "/cave-fulmen/main-DB573JR5.js",
-        "/cave-fulmen/manifest.webmanifest",
-        "/cave-fulmen/polyfills-SCHOHYNV.js",
-        "/cave-fulmen/styles-5INURTSO.css"
+        "/favicon.ico",
+        "/index.html",
+        "/main-DB573JR5.js",
+        "/manifest.webmanifest",
+        "/polyfills-SCHOHYNV.js",
+        "/styles-5INURTSO.css"
       ],
       "patterns": []
     },
@@ -28,22 +28,22 @@
         "ignoreVary": true
       },
       "urls": [
-        "/cave-fulmen/assets/blank.mp4",
-        "/cave-fulmen/assets/data/speed_cameras.json"
+        "/assets/blank.mp4",
+        "/assets/data/speed_cameras.json"
       ],
       "patterns": []
     }
   ],
   "dataGroups": [],
   "hashTable": {
-    "/cave-fulmen/assets/blank.mp4": "0a784cccc5813e83f70a38d8fd2ae877c251723b",
-    "/cave-fulmen/assets/data/speed_cameras.json": "c48a1ca105fa86d3beae6160e8b30fe2cf973f12",
-    "/cave-fulmen/favicon.ico": "9c39f434fe1261f68c5e3eefdf734630d99c5670",
-    "/cave-fulmen/index.html": "6701cfa585c9b936b39210579628f2a5772f1a11",
-    "/cave-fulmen/main-DB573JR5.js": "e84cdd3324190033cb4ef918179fd48472ba9ec5",
-    "/cave-fulmen/manifest.webmanifest": "f0f5792246706192d9f9aa681c7c9f83115408b0",
-    "/cave-fulmen/polyfills-SCHOHYNV.js": "d45c76c5960bab3ace7fd6d211b9579456241f8a",
-    "/cave-fulmen/styles-5INURTSO.css": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+    "/assets/blank.mp4": "0a784cccc5813e83f70a38d8fd2ae877c251723b",
+    "/assets/data/speed_cameras.json": "c48a1ca105fa86d3beae6160e8b30fe2cf973f12",
+    "/favicon.ico": "9c39f434fe1261f68c5e3eefdf734630d99c5670",
+    "/index.html": "3ce318c8067e01d4d1000607c521dcb084a5e6e3",
+    "/main-DB573JR5.js": "e84cdd3324190033cb4ef918179fd48472ba9ec5",
+    "/manifest.webmanifest": "f0f5792246706192d9f9aa681c7c9f83115408b0",
+    "/polyfills-SCHOHYNV.js": "d45c76c5960bab3ace7fd6d211b9579456241f8a",
+    "/styles-5INURTSO.css": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
   },
   "navigationUrls": [
     {
