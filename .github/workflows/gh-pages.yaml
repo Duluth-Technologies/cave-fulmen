@@ -25,7 +25,7 @@ jobs:
         run: npx ng build --configuration production --base-href "/"
 
       - name: Configure custom domain
-        run: echo -n 'app.cavefulmen.com' > CNAME
+        run: echo -n 'app.cavefulmen.com' > ./dist/cavefulmen/browser/CNAME
         
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
