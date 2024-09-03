@@ -15,9 +15,9 @@ export function computeDistance(lat1: number, lon1: number, lat2: number, lon2: 
     return R * c;
   }
 
-  export function computeEastWestOffset(lat: number, lon1: number, lon2: number): number {
-    // Radius of the Earth in kilometers
-    const R = 6371;
+  export function computeEastWestOffsetInMeters(lat: number, lon1: number, lon2: number): number {
+    // Radius of the Earth in meters
+    const R = 6371000;
 
     // Convert latitudes and longitudes from degrees to radians
     const latRad = lat * (Math.PI / 180);
@@ -34,9 +34,9 @@ export function computeDistance(lat1: number, lon1: number, lat2: number, lon2: 
     return distance; // Return signed distance
 }
 
-export function computeNorthSouthOffset(lat1: number, lat2: number): number {
-    // Radius of the Earth in kilometers
-    const R = 6371;
+export function computeNorthSouthOffsetInMeters(lat1: number, lat2: number): number {
+    // Radius of the Earth in meters
+    const R = 6371000;
 
     // Convert latitudes from degrees to radians
     const lat1Rad = lat1 * (Math.PI / 180);

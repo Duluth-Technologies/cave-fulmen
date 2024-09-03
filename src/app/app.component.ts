@@ -11,7 +11,7 @@ import { CommonModule } from '@angular/common';
 import { interval, Observable, of } from 'rxjs';
 import { WAKE_LOCK_SERVICE_TOKEN } from './services/wake-lock.service';
 import { WakeLockServiceImpl } from './services/impl/wake-lock-impl.service';
-import { computeEastWestOffset, computeNorthSouthOffset } from './utils/distance-util';
+import { computeEastWestOffsetInMeters, computeNorthSouthOffsetInMeters } from './utils/distance-util';
 
 @Component({
   selector: 'app-root',
@@ -102,6 +102,7 @@ export class AppComponent implements OnInit, OnDestroy {
       this.azimut = null;
       return;
     }
+    // Compute the speed in km/h
     this.speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy) * 3.6;
     this.speedString = `${this.speed.toFixed(0)} km/h`;
     // We compute the azimut only if the speed is greater than 10 m/s (so 36 km/h)
@@ -122,18 +123,22 @@ export class AppComponent implements OnInit, OnDestroy {
           if (this.lat != null && this.lon != null && this.timestamp != null) {
             // Compute the speed in m/s
             const dt = now - this.timestamp;
-            const dx = computeEastWestOffset(this.lat, this.lon, position.coords.longitude);
+            console.log('dt:', dt);
+            const dx = computeEastWestOffsetInMeters(this.lat, this.lon, position.coords.longitude);
+            console.log('dx:', dx);
             this.vx = dx / dt;
-            const dy = computeNorthSouthOffset(this.lat, position.coords.latitude);
+            console.log('vx:', this.vx);
+            const dy = computeNorthSouthOffsetInMeters(this.lat, position.coords.latitude);
+            console.log('dy:', dy);
             this.vy = dy / dt;
+            console.log('vy:', this.vy);
             this.setSpeedAndAzimut();
           }
 
           this.lat = position.coords.latitude;
           this.lon = position.coords.longitude;
-          this.precision = position.coords.accuracy;
-          // Get current time
-          this.timestamp = Math.floor(Date.now() / 1000);
+          this.precision = position.coords.accuracy; 
+          this.timestamp = now;
         },
         error => {
           console.error('Error:', error);
