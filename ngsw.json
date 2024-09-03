@@ -1,6 +1,6 @@
 {
   "configVersion": 1,
-  "timestamp": 1725393613171,
+  "timestamp": 1725398602244,
   "index": "/index.html",
   "assetGroups": [
     {
@@ -29,6 +29,7 @@
       },
       "urls": [
         "/assets/blank.mp4",
+        "/assets/cavefulmen.webp",
         "/assets/data/speed_cameras.json"
       ],
       "patterns": []
@@ -37,8 +38,9 @@
   "dataGroups": [],
   "hashTable": {
     "/assets/blank.mp4": "0a784cccc5813e83f70a38d8fd2ae877c251723b",
+    "/assets/cavefulmen.webp": "210748b2acae3494303a628426c69e9e6e981580",
     "/assets/data/speed_cameras.json": "c48a1ca105fa86d3beae6160e8b30fe2cf973f12",
-    "/favicon.ico": "9c39f434fe1261f68c5e3eefdf734630d99c5670",
+    "/favicon.ico": "d3a3f947b66ce4cabb843c6bb7d16fdd2bb97ced",
     "/index.html": "3ce318c8067e01d4d1000607c521dcb084a5e6e3",
     "/main-DB573JR5.js": "e84cdd3324190033cb4ef918179fd48472ba9ec5",
     "/manifest.webmanifest": "f0f5792246706192d9f9aa681c7c9f83115408b0",
