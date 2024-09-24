@@ -8,8 +8,8 @@ body {
 .arrow {
     width: 0; 
     height: 0; 
-    border-left: 10px solid transparent;
-    border-right: 10px solid transparent;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
     border-bottom: 20px solid black;
     transform-origin: center center; /* Ensure rotation happens around the center */
     transition: transform 0.3s ease; /* Optional: smooth rotation */

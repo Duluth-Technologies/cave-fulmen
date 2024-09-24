@@ -1,28 +1,28 @@
 import { Injectable } from "@angular/core";
-import { OsmService } from "../osm.service";
+import { RadarService } from "../radar.service";
 import { Observable, shareReplay } from "rxjs";
-import { OsmData } from "../../models/osmData.model";
+import { Radar } from "../../models/radar.model";
 import { HttpClient } from "@angular/common/http";
 
 @Injectable({
     providedIn: 'root'
 })
-export class OsmServiceLocalImpl implements OsmService {
+export class RadarServiceImpl implements RadarService {
 
-    private jsonUrl = 'assets/data/speed_cameras.json';
+    private jsonUrl = 'assets/data/radars.json';
 
     // Observable to store the cached response
-    private osmData$: Observable<OsmData>;
+    private radars$: Observable<Radar[]>;
 
     constructor(private httpClient: HttpClient) { 
         // Initialize the observable and apply shareReplay to cache the result
-        this.osmData$ = this.httpClient.get<OsmData>(this.jsonUrl).pipe(
+        this.radars$ = this.httpClient.get<Radar[]>(this.jsonUrl).pipe(
             shareReplay(1) // Cache the latest result, allowing replay to any new subscribers
         );
     }
 
-    getOsmData(): Observable<OsmData> {
+    getRadars(): Observable<Radar[]> {
         // Return the cached observable
-        return this.osmData$;
+        return this.radars$;
     }
 }
