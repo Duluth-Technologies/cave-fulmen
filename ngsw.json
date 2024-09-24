@@ -1,6 +1,6 @@
 {
   "configVersion": 1,
-  "timestamp": 1725399466428,
+  "timestamp": 1727214270415,
   "index": "/index.html",
   "assetGroups": [
     {
@@ -13,7 +13,7 @@
       "urls": [
         "/favicon.ico",
         "/index.html",
-        "/main-DB573JR5.js",
+        "/main-32RWVVZE.js",
         "/manifest.webmanifest",
         "/polyfills-SCHOHYNV.js",
         "/styles-5INURTSO.css"
@@ -30,7 +30,7 @@
       "urls": [
         "/assets/blank.mp4",
         "/assets/cavefulmen.webp",
-        "/assets/data/speed_cameras.json"
+        "/assets/data/radars.json"
       ],
       "patterns": []
     }
@@ -39,10 +39,10 @@
   "hashTable": {
     "/assets/blank.mp4": "0a784cccc5813e83f70a38d8fd2ae877c251723b",
     "/assets/cavefulmen.webp": "210748b2acae3494303a628426c69e9e6e981580",
-    "/assets/data/speed_cameras.json": "c48a1ca105fa86d3beae6160e8b30fe2cf973f12",
+    "/assets/data/radars.json": "37fe6477f89770cf8c6a904f3ffc9a78ff5f56cb",
     "/favicon.ico": "d3a3f947b66ce4cabb843c6bb7d16fdd2bb97ced",
-    "/index.html": "3ce318c8067e01d4d1000607c521dcb084a5e6e3",
-    "/main-DB573JR5.js": "e84cdd3324190033cb4ef918179fd48472ba9ec5",
+    "/index.html": "3e2f67a4ab6403e04c58d0bfb59a1c457bfdee49",
+    "/main-32RWVVZE.js": "31ceb2d490175f2ad32044537ae142aab8ea36cc",
     "/manifest.webmanifest": "f0f5792246706192d9f9aa681c7c9f83115408b0",
     "/polyfills-SCHOHYNV.js": "d45c76c5960bab3ace7fd6d211b9579456241f8a",
     "/styles-5INURTSO.css": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
