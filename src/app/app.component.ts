@@ -4,8 +4,8 @@ import { CAMERA_SERVICE_TOKEN } from './services/camera.service';
 import { CameraServiceImpl } from './services/impl/camera-impl.service';
 import { concatMap, distinctUntilChanged, exhaustMap, map, switchMap } from 'rxjs/operators';
 import { Camera } from './models/camera.model';
-import { OSM_SERVICE_TOKEN } from './services/osm.service';
-import { OsmServiceLocalImpl } from './services/impl/osm-local-impl.service';
+import { RADAR_SERVICE_TOKEN } from './services/radar.service';
+import { RadarServiceImpl } from './services/impl/radar-impl.service';
 import { provideHttpClient } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
 import { interval, Observable, of } from 'rxjs';
@@ -21,7 +21,7 @@ import { computeEastWestOffsetInMeters, computeNorthSouthOffsetInMeters } from '
   styleUrl: './app.component.css',
   providers: [
     { provide: CAMERA_SERVICE_TOKEN, useClass: CameraServiceImpl },
-    { provide: OSM_SERVICE_TOKEN, useClass: OsmServiceLocalImpl },
+    { provide: RADAR_SERVICE_TOKEN, useClass: RadarServiceImpl },
     { provide: WAKE_LOCK_SERVICE_TOKEN, useClass: WakeLockServiceImpl },
   ],
 })
@@ -57,7 +57,7 @@ export class AppComponent implements OnInit, OnDestroy {
           return of(null); // Or use skip() to ignore this emission
         }
         return this.cameraService.getClosestCamera(this.lat, this.lon).pipe(
-          map(({ camera, distance }) => ({
+          map(({ camera, distance }) => ({    
             maxSpeed: camera.maxSpeed,
             distance: distance,
             lat: camera.lat,
