@@ -50,3 +50,38 @@ export function computeNorthSouthOffsetInMeters(lat1: number, lat2: number): num
 
     return distance; // Return signed distance
 }
+
+function dotProduct(vecA: [number, number], vecB: [number, number]): number {
+  return vecA[0] * vecB[0] + vecA[1] * vecB[1];
+}
+
+function magnitude(vec: [number, number]): number {
+  return Math.sqrt(vec[0] * vec[0] + vec[1] * vec[1]);
+}
+
+function crossProductZ(vecA: [number, number], vecB: [number, number]): number {
+  // For 2D vectors, the "z" component of the cross product is the determinant
+  return vecA[0] * vecB[1] - vecA[1] * vecB[0];
+}
+
+function angleBetweenVectors(vecA: [number, number], vecB: [number, number]): number {
+  const dotProd = dotProduct(vecA, vecB);
+  const magA = magnitude(vecA);
+  const magB = magnitude(vecB);
+
+  const cosTheta = dotProd / (magA * magB);
+  const angle = Math.acos(cosTheta); // Returns the angle in radians between 0 and π
+
+  // Determine the sign of the angle using the cross product
+  const crossZ = crossProductZ(vecA, vecB);
+
+  // If the cross product's z-component is negative, the angle is clockwise, so make it negative
+  return crossZ < 0 ? -angle : angle;
+}
+
+export function angleBetweenVectorAndTowPoints(vec: [number, number], lat: number, lon: number, lat2: number, lon2: number): number {
+  const eastWestOffset = computeEastWestOffsetInMeters(lat, lon, lon2);
+  const northSouthOffset = computeNorthSouthOffsetInMeters(lat, lat2);
+  const vec2: [number, number] = [northSouthOffset, eastWestOffset];
+  return angleBetweenVectors(vec, vec2);
+}

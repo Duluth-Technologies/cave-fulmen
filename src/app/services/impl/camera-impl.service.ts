@@ -4,7 +4,7 @@ import { RADAR_SERVICE_TOKEN, RadarService } from '../radar.service';
 import { map, Observable } from 'rxjs';
 import { Radar } from '../../models/radar.model';
 import { Camera } from '../../models/camera.model';
-import { computeDistance } from '../../utils/distance-util';
+import { computeDistance } from '../../utils/math-util';
 
 @Injectable({
   providedIn: 'root'
