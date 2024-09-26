@@ -11,7 +11,7 @@ import { CommonModule } from '@angular/common';
 import { interval, Observable, of } from 'rxjs';
 import { WAKE_LOCK_SERVICE_TOKEN } from './services/wake-lock.service';
 import { WakeLockServiceImpl } from './services/impl/wake-lock-impl.service';
-import { computeEastWestOffsetInMeters, computeNorthSouthOffsetInMeters } from './utils/distance-util';
+import { angleBetweenVectorAndTowPoints, computeEastWestOffsetInMeters, computeNorthSouthOffsetInMeters } from './utils/math-util';
 
 @Component({
   selector: 'app-root',
@@ -39,7 +39,6 @@ export class AppComponent implements OnInit, OnDestroy {
   vy: number | null = null;
 
   speed: number | null = null;
-  azimut: number | null = null;
   speedString: string | null = null;
 
   watchId: number | null = null;
@@ -90,28 +89,20 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   computeAngle(lat: number, lon: number) {
-    if (this.lat == null || this.lon == null || this.azimut == null) {
+    if (this.lat == null || this.lon == null || this.vx == null || this.vy == null) {
       return null;
-    }
-    return Math.atan2(lon - this.lon, lat - this.lat) * 180 / Math.PI - this.azimut;
+    }    
+    return angleBetweenVectorAndTowPoints([this.vx!, this.vy!] , this.lat, this.lon, lat, lon);
   }
 
-  setSpeedAndAzimut(): void {
+  setSpeed(): void {
     if (this.vx == null || this.vy == null) {
       this.speedString = null;
-      this.azimut = null;
       return;
     }
     // Compute the speed in km/h
     this.speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy) * 3.6;
     this.speedString = `${this.speed.toFixed(0)} km/h`;
-    // We compute the azimut only if the speed is greater than 10 m/s (so 36 km/h)
-    if (this.speed > 10) {
-      console.log('Speed:', this.speed);
-      this.azimut = Math.atan2(this.vy, this.vx) * 180 / Math.PI;
-    } else {
-      this.azimut = null;
-    }
   }
 
   watchPosition(): void {
@@ -132,7 +123,7 @@ export class AppComponent implements OnInit, OnDestroy {
             console.log('dy:', dy);
             this.vy = dy / dt;
             console.log('vy:', this.vy);
-            this.setSpeedAndAzimut();
+            this.setSpeed();
           }
 
           this.lat = position.coords.latitude;
@@ -158,7 +149,5 @@ export class AppComponent implements OnInit, OnDestroy {
       this.watchId = null;
     }
   }
-
-
 
 }
