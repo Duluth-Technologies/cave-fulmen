@@ -11,7 +11,7 @@ import { CommonModule } from '@angular/common';
 import { interval, Observable, of } from 'rxjs';
 import { WAKE_LOCK_SERVICE_TOKEN } from './services/wake-lock.service';
 import { WakeLockServiceImpl } from './services/impl/wake-lock-impl.service';
-import { angleBetweenVectorAndTowPoints, computeEastWestOffsetInMeters, computeNorthSouthOffsetInMeters } from './utils/math-util';
+import { angleInDegreesBetweenVectorAndTowPoints, computeEastWestOffsetInMeters, computeNorthSouthOffsetInMeters } from './utils/math-util';
 
 @Component({
   selector: 'app-root',
@@ -92,7 +92,7 @@ export class AppComponent implements OnInit, OnDestroy {
     if (this.lat == null || this.lon == null || this.vx == null || this.vy == null) {
       return null;
     }    
-    return angleBetweenVectorAndTowPoints([this.vx!, this.vy!] , this.lat, this.lon, lat, lon);
+    return angleInDegreesBetweenVectorAndTowPoints([this.vx!, this.vy!] , this.lat, this.lon, lat, lon);
   }
 
   setSpeed(): void {

@@ -64,13 +64,13 @@ function crossProductZ(vecA: [number, number], vecB: [number, number]): number {
   return vecA[0] * vecB[1] - vecA[1] * vecB[0];
 }
 
-function angleBetweenVectors(vecA: [number, number], vecB: [number, number]): number {
+function angleInDegreesBetweenVectors(vecA: [number, number], vecB: [number, number]): number {
   const dotProd = dotProduct(vecA, vecB);
   const magA = magnitude(vecA);
   const magB = magnitude(vecB);
 
   const cosTheta = dotProd / (magA * magB);
-  const angle = Math.acos(cosTheta); // Returns the angle in radians between 0 and π
+  const angle = 180 / Math.PI * Math.acos(cosTheta); // Returns the angle in degress between 0 and 180
 
   // Determine the sign of the angle using the cross product
   const crossZ = crossProductZ(vecA, vecB);
@@ -79,9 +79,9 @@ function angleBetweenVectors(vecA: [number, number], vecB: [number, number]): nu
   return crossZ < 0 ? -angle : angle;
 }
 
-export function angleBetweenVectorAndTowPoints(vec: [number, number], lat: number, lon: number, lat2: number, lon2: number): number {
+export function angleInDegreesBetweenVectorAndTowPoints(vec: [number, number], lat: number, lon: number, lat2: number, lon2: number): number {
   const eastWestOffset = computeEastWestOffsetInMeters(lat, lon, lon2);
   const northSouthOffset = computeNorthSouthOffsetInMeters(lat, lat2);
   const vec2: [number, number] = [northSouthOffset, eastWestOffset];
-  return angleBetweenVectors(vec, vec2);
+  return angleInDegreesBetweenVectors(vec, vec2);
 }
