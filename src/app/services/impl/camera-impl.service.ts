@@ -4,7 +4,7 @@ import { RADAR_SERVICE_TOKEN, RadarService } from '../radar.service';
 import { map, Observable } from 'rxjs';
 import { Radar } from '../../models/radar.model';
 import { Camera } from '../../models/camera.model';
-import { computeDistance } from '../../utils/math-util';
+import { computeDistanceInKm } from '../../utils/math-util';
 
 @Injectable({
   providedIn: 'root'
@@ -20,7 +20,7 @@ export class CameraServiceImpl implements CameraService {
         let minDistance = Number.MAX_VALUE;
         let closestCamera: Camera | null = null;
         for (let radar of radars) {
-          let distance = computeDistance(lat, lon, radar.latitude, radar.longitude);
+          let distance = computeDistanceInKm(lat, lon, radar.latitude, radar.longitude);
           if (distance < minDistance) {
             minDistance = distance;
             closestCamera = new Camera(radar.latitude, radar.longitude, radar.speed_limit ?? 0);

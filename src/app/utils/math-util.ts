@@ -1,4 +1,4 @@
-export function computeDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+export function computeDistanceInKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
     const toRadians = (degrees: number) => degrees * Math.PI / 180;
 
     const R = 6371; // Earth's radius in kilometers
@@ -28,8 +28,7 @@ export function computeDistance(lat1: number, lon1: number, lat2: number, lon2: 
     const deltaLon = lon2Rad - lon1Rad;
 
     // Compute the east-west distance using the Haversine formula
-    const x = deltaLon * Math.cos(latRad);
-    const distance = R * x;
+    const distance = R * deltaLon * Math.cos(latRad);
 
     return distance; // Return signed distance
 }

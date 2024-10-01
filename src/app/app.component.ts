@@ -33,7 +33,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
   lat: number | null = null;
   lon: number | null = null;
-  precision: number | null = null;
+  accuracy: number | null = null;
   timestamp: number | null = null;
   vx: number | null = null;
   vy: number | null = null;
@@ -88,11 +88,11 @@ export class AppComponent implements OnInit, OnDestroy {
     }
   }
 
-  computeAngle(lat: number, lon: number) {
+  computeAngle(lat: number, lon: number): number {
     if (this.lat == null || this.lon == null || this.vx == null || this.vy == null) {
-      return null;
-    }    
-    return angleInDegreesBetweenVectorAndTowPoints([this.vx!, this.vy!] , this.lat, this.lon, lat, lon);
+      return 0;
+    }     
+    return - angleInDegreesBetweenVectorAndTowPoints([this.vx!, this.vy!] , this.lat, this.lon, lat, lon);
   }
 
   setSpeed(): void {
@@ -128,7 +128,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
           this.lat = position.coords.latitude;
           this.lon = position.coords.longitude;
-          this.precision = position.coords.accuracy; 
+          this.accuracy = position.coords.accuracy; 
           this.timestamp = now;
         },
         error => {
