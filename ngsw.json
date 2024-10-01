@@ -1,6 +1,6 @@
 {
   "configVersion": 1,
-  "timestamp": 1727641020179,
+  "timestamp": 1727816796018,
   "index": "/index.html",
   "assetGroups": [
     {
@@ -13,7 +13,7 @@
       "urls": [
         "/favicon.ico",
         "/index.html",
-        "/main-W7ANGCWU.js",
+        "/main-ZUGGL6Z6.js",
         "/manifest.webmanifest",
         "/polyfills-SCHOHYNV.js",
         "/styles-5INURTSO.css"
@@ -41,8 +41,8 @@
     "/assets/cavefulmen.webp": "210748b2acae3494303a628426c69e9e6e981580",
     "/assets/data/radars.json": "37fe6477f89770cf8c6a904f3ffc9a78ff5f56cb",
     "/favicon.ico": "d3a3f947b66ce4cabb843c6bb7d16fdd2bb97ced",
-    "/index.html": "0440750d4370b5390ddea97b708f0e597b3149aa",
-    "/main-W7ANGCWU.js": "52e866be82c3d3d595a6629da92c1078772c2600",
+    "/index.html": "c1acfce29343f7eea71c767d05c8894578355381",
+    "/main-ZUGGL6Z6.js": "e51fc1123d7a02030c4ec76794933ee0a40fe7b8",
     "/manifest.webmanifest": "f0f5792246706192d9f9aa681c7c9f83115408b0",
     "/polyfills-SCHOHYNV.js": "d45c76c5960bab3ace7fd6d211b9579456241f8a",
     "/styles-5INURTSO.css": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
