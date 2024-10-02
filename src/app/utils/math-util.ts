@@ -81,6 +81,6 @@ function angleInDegreesBetweenVectors(vecA: [number, number], vecB: [number, num
 export function angleInDegreesBetweenVectorAndTowPoints(vec: [number, number], lat: number, lon: number, lat2: number, lon2: number): number {
   const eastWestOffset = computeEastWestOffsetInMeters(lat, lon, lon2);
   const northSouthOffset = computeNorthSouthOffsetInMeters(lat, lat2);
-  const vec2: [number, number] = [northSouthOffset, eastWestOffset];
+  const vec2: [number, number] = [eastWestOffset, northSouthOffset];
   return angleInDegreesBetweenVectors(vec, vec2);
 }
