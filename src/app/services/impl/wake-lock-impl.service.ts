@@ -1,4 +1,5 @@
 import { Injectable, Renderer2, RendererFactory2 } from '@angular/core';
+import { BehaviorSubject, Observable } from 'rxjs';
 import { WakeLockService } from '../wake-lock.service';
 
 @Injectable({
@@ -8,6 +9,20 @@ export class WakeLockServiceImpl implements WakeLockService {
   private wakeLock: any = null;
   private videoElement: HTMLVideoElement | null = null;
   private renderer: Renderer2;
+  
+  /**
+   * BehaviorSubject to track wake lock state internally.
+   * Starts as false (inactive).
+   */
+  private isActiveSubject = new BehaviorSubject<boolean>(false);
+  
+  /**
+   * Observable that emits the current wake lock state.
+   * Emits true when wake lock is successfully acquired.
+   * Emits false when wake lock is released.
+   * Requirements: 6.1, 6.2
+   */
+  public readonly isActive$: Observable<boolean> = this.isActiveSubject.asObservable();
 
   constructor(private rendererFactory: RendererFactory2) {
     this.renderer = this.rendererFactory.createRenderer(null, null);
@@ -21,14 +36,18 @@ export class WakeLockServiceImpl implements WakeLockService {
       try {
         this.wakeLock = await (navigator as any).wakeLock.request('screen');
         console.log('Screen Wake Lock active');
+        this.isActiveSubject.next(true);
         this.wakeLock.addEventListener('release', () => {
           console.log('Screen Wake Lock released');
+          this.isActiveSubject.next(false);
         });
       } catch (err) {
         console.error('Error requesting wake lock:', err);
+        this.isActiveSubject.next(false);
       }
     } else {
       this.startVideoHack();
+      this.isActiveSubject.next(true);
     }
 
     document.addEventListener('visibilitychange', this.handleVisibilityChange.bind(this));
@@ -43,11 +62,13 @@ export class WakeLockServiceImpl implements WakeLockService {
         await this.wakeLock.release();
         this.wakeLock = null;
         console.log('Screen Wake Lock released');
+        this.isActiveSubject.next(false);
       } catch (err) {
         console.error('Error releasing wake lock:', err);
       }
     } else {
       this.stopVideoHack();
+      this.isActiveSubject.next(false);
     }
 
     document.removeEventListener('visibilitychange', this.handleVisibilityChange.bind(this));
