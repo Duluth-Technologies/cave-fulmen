@@ -572,60 +572,6 @@ describe('Accessibility Property Tests', () => {
       });
 
       /**
-       * Test that the connection indicator has a descriptive aria-label.
-       * 
-       * Validates: Requirement 17.2
-       */
-      it('should have descriptive aria-label on connection indicator', () => {
-        fc.assert(
-          fc.property(
-            fc.boolean(),
-            (isOnline: boolean) => {
-              component.isOnline = isOnline;
-              fixture.detectChanges();
-
-              const connectionIndicator = fixture.nativeElement.querySelector('.connection-indicator');
-              const ariaLabel = connectionIndicator.getAttribute('aria-label');
-              
-              expect(ariaLabel).toBeTruthy();
-              expect(ariaLabel.length).toBeGreaterThan(0);
-              expect(ariaLabel.toLowerCase()).toContain('network');
-              
-              return ariaLabel !== null && ariaLabel.length > 0;
-            }
-          ),
-          { numRuns: 100 }
-        );
-      });
-
-      /**
-       * Test that the wake lock indicator has a descriptive aria-label.
-       * 
-       * Validates: Requirement 17.2
-       */
-      it('should have descriptive aria-label on wake lock indicator', () => {
-        fc.assert(
-          fc.property(
-            fc.boolean(),
-            (wakeLockActive: boolean) => {
-              component.wakeLockActive = wakeLockActive;
-              fixture.detectChanges();
-
-              const wakeLockIndicator = fixture.nativeElement.querySelector('.wake-lock-indicator');
-              const ariaLabel = wakeLockIndicator.getAttribute('aria-label');
-              
-              expect(ariaLabel).toBeTruthy();
-              expect(ariaLabel.length).toBeGreaterThan(0);
-              expect(ariaLabel.toLowerCase()).toContain('wake lock');
-              
-              return ariaLabel !== null && ariaLabel.length > 0;
-            }
-          ),
-          { numRuns: 100 }
-        );
-      });
-
-      /**
        * Test that all status indicators have role="img" for proper screen reader interpretation.
        * 
        * Validates: Requirement 17.2
@@ -647,14 +593,14 @@ describe('Accessibility Property Tests', () => {
               const gpsIndicator = fixture.nativeElement.querySelector('.gps-indicator');
               const connectionIndicator = fixture.nativeElement.querySelector('.connection-indicator');
               const wakeLockIndicator = fixture.nativeElement.querySelector('.wake-lock-indicator');
-              
+
               expect(gpsIndicator.getAttribute('role')).toBe('img');
-              expect(connectionIndicator.getAttribute('role')).toBe('img');
-              expect(wakeLockIndicator.getAttribute('role')).toBe('img');
-              
+              expect(connectionIndicator).toBeNull();
+              expect(wakeLockIndicator).toBeNull();
+
               return gpsIndicator.getAttribute('role') === 'img' &&
-                     connectionIndicator.getAttribute('role') === 'img' &&
-                     wakeLockIndicator.getAttribute('role') === 'img';
+                     connectionIndicator === null &&
+                     wakeLockIndicator === null;
             }
           ),
           { numRuns: 100 }
