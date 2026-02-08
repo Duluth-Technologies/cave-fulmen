@@ -20,21 +20,34 @@ import { CommonModule } from '@angular/common';
     <header class="app-header" role="banner">
       <!-- App branding - subtle and non-distracting (Requirement 13.2) -->
       <div class="app-branding">
-        <svg 
-          class="app-logo" 
-          viewBox="0 0 24 24" 
-          fill="none" 
-          xmlns="http://www.w3.org/2000/svg"
-          aria-hidden="true"
-        >
-          <!-- Speed camera/radar icon -->
-          <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/>
-          <circle cx="12" cy="12" r="4" fill="currentColor"/>
-          <line x1="12" y1="2" x2="12" y2="6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-          <line x1="12" y1="18" x2="12" y2="22" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-          <line x1="2" y1="12" x2="6" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-          <line x1="18" y1="12" x2="22" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-        </svg>
+        <div class="app-logo-badge" aria-hidden="true">
+          <svg
+            class="app-logo"
+            viewBox="0 0 32 32"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <!-- CCTV-inspired brand mark based on the app logo -->
+            <path
+              d="M4 11.2L20.9 7.1C22.2 6.8 23.4 7.8 23.4 9.2V17.1C23.4 18.2 22.7 19.1 21.7 19.4L5.9 23.6C4.6 23.9 3.4 22.9 3.4 21.5V13.5C3.4 12.4 4 11.5 5 11.2Z"
+              fill="currentColor"
+            />
+            <circle cx="9.6" cy="16.4" r="4.2" fill="var(--bg-secondary)" />
+            <circle cx="9.6" cy="16.4" r="2.2" fill="currentColor" />
+            <path
+              d="M19.6 20.6L24.1 24.1"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+            />
+            <path
+              d="M22.8 24.8H27.5"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+            />
+          </svg>
+        </div>
         <span class="app-name">Cavefulmen</span>
       </div>
 
@@ -93,12 +106,24 @@ import { CommonModule } from '@angular/common';
       align-items: center;
       gap: 8px;
       color: var(--text-primary);
-      opacity: 0.8;
+      opacity: 0.9;
+    }
+
+    .app-logo-badge {
+      width: 28px;
+      height: 28px;
+      border-radius: 7px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-primary);
+      background-color: var(--button-bg);
+      border: 1px solid var(--border-color);
     }
 
     .app-logo {
-      width: 24px;
-      height: 24px;
+      width: 22px;
+      height: 22px;
       color: var(--text-primary);
     }
 
