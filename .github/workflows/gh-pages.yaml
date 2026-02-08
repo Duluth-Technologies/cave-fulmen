@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - master
+  schedule:
+    # Run monthly on the 1st at 03:00 UTC
+    - cron: '0 3 1 * *'
 
 jobs:
   build:
@@ -13,10 +16,35 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: latest
+
+      - name: Install Python dependencies
+        run: python -m pip install --upgrade pip requests
+
+      - name: Generate radar dataset
+        run: python3 gen/radars.py
+
+      - name: Sync generated radar data to app assets
+        run: cp gen/data/radars.json src/assets/data/radars.json
+
+      - name: Validate generated radar dataset is non-empty
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          data = json.loads(Path("src/assets/data/radars.json").read_text(encoding="utf-8"))
+          if not isinstance(data, list) or len(data) == 0:
+              raise SystemExit("Generated radar dataset is empty.")
+          print(f"Generated radar count: {len(data)}")
+          PY
 
       - name: Install dependencies
         run: npm install

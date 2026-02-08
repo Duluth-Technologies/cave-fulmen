@@ -4,8 +4,43 @@ import os
 import math
 from collections import Counter
 import re
+from pathlib import Path
+import argparse
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
-osm_data_file_path = "data/osm_data.json"
+BASE_DIR = Path(__file__).resolve().parent
+DATA_DIR = BASE_DIR / "data"
+DATA_DIR.mkdir(parents=True, exist_ok=True)
+
+parser = argparse.ArgumentParser(description="Download and build radar dataset.")
+parser.add_argument(
+    "--limit",
+    type=int,
+    default=None,
+    help="Limit number of detail radar API lookups (for smoke tests).",
+)
+parser.add_argument(
+    "--allow-empty-output",
+    action="store_true",
+    help="Allow overwriting output with an empty list when no radar data is collected.",
+)
+args = parser.parse_args()
+
+session = requests.Session()
+retry_policy = Retry(
+    total=3,
+    connect=3,
+    read=3,
+    backoff_factor=0.5,
+    status_forcelist=[429, 500, 502, 503, 504],
+    allowed_methods=["GET"],
+)
+adapter = HTTPAdapter(max_retries=retry_policy)
+session.mount("https://", adapter)
+session.mount("http://", adapter)
+
+osm_data_file_path = DATA_DIR / "osm_data.json"
 
 if os.path.exists(osm_data_file_path):
     print("Loading OSM data from JSON file...")
@@ -28,14 +63,14 @@ else:
     """
 
     # Send the request to the Overpass API
-    response = requests.get(overpass_url, params={'data': overpass_query})
+    response = session.get(overpass_url, params={'data': overpass_query}, timeout=120)
+    response.raise_for_status()
     osm_data = response.json()
     with open(osm_data_file_path, 'w', encoding='utf-8') as f:
-        os.makedirs(os.path.dirname(osm_data_file_path), exist_ok=True)
         json.dump(osm_data, f, ensure_ascii=False, indent=4)
 
 
-securite_routiere_file_path = "data/securite_routiere_data.json"
+securite_routiere_file_path = DATA_DIR / "securite_routiere_data.json"
 
 if os.path.exists(securite_routiere_file_path):
     print("Loading Securité Routière data from JSON file...")
@@ -52,7 +87,7 @@ else:
     }
 
     # Send a GET request to the URL
-    response = requests.get(securite_routiere_url, headers=headers)
+    response = session.get(securite_routiere_url, headers=headers, timeout=120)
 
     # Raise an exception if the request was unsuccessful
     response.raise_for_status()
@@ -60,8 +95,34 @@ else:
     # Parse the JSON content of the response and store it in a variable
     securite_routiere_data = response.json()
     with open(securite_routiere_file_path, 'w', encoding='utf-8') as f:
-        os.makedirs(os.path.dirname(securite_routiere_file_path), exist_ok=True)
         json.dump(securite_routiere_data, f, ensure_ascii=False, indent=4)
+
+
+def fetch_radar_details(radar_id):
+    headers = {
+        "Accept": "application/json",
+        "User-Agent": "curl/7.68.0"
+    }
+    url = f"https://radars.securite-routiere.gouv.fr/radars/{radar_id}"
+    print(url)
+    try:
+        response = session.get(url, headers=headers, timeout=60)
+    except requests.RequestException as err:
+        print(f"Skipping radar ID {radar_id}: request failed ({err}).")
+        return None
+
+    if response.status_code == 404:
+        print(f"Skipping radar ID {radar_id}: not found (404).")
+        return None
+
+    try:
+        response.raise_for_status()
+        return response.json()
+    except requests.RequestException as err:
+        print(f"Skipping radar ID {radar_id}: HTTP error ({err}).")
+    except ValueError as err:
+        print(f"Skipping radar ID {radar_id}: invalid JSON ({err}).")
+    return None
 
 # Extract the 'type' from each item and count occurrences
 type_counts = Counter(item['type'] for item in securite_routiere_data)
@@ -110,28 +171,25 @@ def compute_distance_in_km(lat1, lon1, lat2, lon2):
     return R * c
 
 result = []
+detail_lookups = 0
               
 for item in securite_routiere_data:
-    if item['type'] == 'fixes':
-        id = item['id']
-        headers = {
-            "Accept": "application/json",
-            "User-Agent": "curl/7.68.0"
-        }
-        print("https://radars.securite-routiere.gouv.fr/radars/" + id)
-        # Send a GET request to the URL
-        response = requests.get("https://radars.securite-routiere.gouv.fr/radars/" + id, headers=headers)
-        # Raise an exception if the request was unsuccessful
-        response.raise_for_status()
+    if args.limit is not None and detail_lookups >= args.limit:
+        print(f"Reached --limit={args.limit}; stopping detail lookups.")
+        break
 
-        # Parse the JSON content of the response and store it in a variable
-        securite_routiere_radar = response.json()
-        rules_mesured = securite_routiere_radar['rulesmesured']
+    if item['type'] == 'fixes':
+        detail_lookups += 1
+        id = item['id']
+        securite_routiere_radar = fetch_radar_details(id)
+        if securite_routiere_radar is None:
+            continue
+        rules_mesured = securite_routiere_radar.get('rulesmesured', [])
         if len(rules_mesured) != 1:
             print(f"Radar ID {id} has {len(rules_mesured)} rules measured.")
         else:
             rule = rules_mesured[0]
-            macinename = rule['macinename']
+            macinename = rule.get('macinename', '')
             match = re.search(r'vitesse_vl_(\d+)', macinename)
             speed_limit = int(match.group(1)) if match else None
             result.append({
@@ -141,19 +199,11 @@ for item in securite_routiere_data:
                 'source': "securite_routiere"
             })
     elif item['type'] == 'itineraire':
+        detail_lookups += 1
         id = item['id']
-        headers = {
-            "Accept": "application/json",
-            "User-Agent": "curl/7.68.0"
-        }
-        print("https://radars.securite-routiere.gouv.fr/radars/" + id)
-        # Send a GET request to the URL
-        response = requests.get("https://radars.securite-routiere.gouv.fr/radars/" + id, headers=headers)
-        # Raise an exception if the request was unsuccessful
-        response.raise_for_status()
-
-        # Parse the JSON content of the response and store it in a variable
-        securite_routiere_radar = response.json()
+        securite_routiere_radar = fetch_radar_details(id)
+        if securite_routiere_radar is None:
+            continue
         try:
             radius = float(securite_routiere_radar['radartronconkm'])
         except (ValueError, TypeError):
@@ -204,7 +254,17 @@ def remove_duplicates(radars):
     return unique_radars
 
 result = remove_duplicates(result)
+print(f"Detail lookups attempted: {detail_lookups}")
+print(f"Unique radars written: {len(result)}")
 
-output_file_path = "data/radars.json"
+output_file_path = DATA_DIR / "radars.json"
+if not result and output_file_path.exists() and not args.allow_empty_output:
+    print("No radars collected; preserving existing radars.json.")
+    with open(output_file_path, 'r', encoding='utf-8') as f:
+        existing_data = json.load(f)
+    if isinstance(existing_data, list):
+        result = existing_data
+        print(f"Reused existing radar entries: {len(result)}")
+
 with open(output_file_path, 'w', encoding='utf-8') as f:
     json.dump(result, f, ensure_ascii=False, indent=4)
