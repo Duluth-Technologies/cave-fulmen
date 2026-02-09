@@ -74,8 +74,9 @@ export const ARROW_THRESHOLDS = {
     }
 
     /* Requirements 9.1, 9.2: Pulsing animation when distance < 1km */
-    .arrow-container.pulsing {
+    .arrow-container.pulsing .arrow-svg {
       animation: arrow-pulse 1.2s ease-in-out infinite;
+      transform-origin: center;
     }
 
     /* Requirement 9.2: Noticeable but not distracting animation */
@@ -105,8 +106,8 @@ export const ARROW_THRESHOLDS = {
       filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
     }
 
-    /* Ensure pulsing animation doesn't conflict with rotation */
-    .arrow-container.pulsing.visible {
+    /* Keep rotation on container and pulse on svg to avoid transform conflicts */
+    .arrow-container.pulsing.visible .arrow-svg {
       animation: arrow-pulse 1.2s ease-in-out infinite;
     }
   `]

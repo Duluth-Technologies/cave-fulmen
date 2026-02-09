@@ -2,6 +2,7 @@ import requests
 import json
 import os
 import math
+import time
 from collections import Counter
 import re
 from pathlib import Path
@@ -39,6 +40,35 @@ retry_policy = Retry(
 adapter = HTTPAdapter(max_retries=retry_policy)
 session.mount("https://", adapter)
 session.mount("http://", adapter)
+
+def securite_get_with_retry(url, headers, timeout, request_name):
+    while True:
+        try:
+            response = session.get(url, headers=headers, timeout=timeout)
+        except requests.RequestException as err:
+            err_text = str(err)
+            if "RemoteDisconnected" in err_text or "Connection aborted" in err_text:
+                print(
+                    f"{request_name}: remote disconnected the connection. "
+                    "Retrying in 30 seconds..."
+                )
+            else:
+                print(
+                    f"{request_name}: request failed ({err}). "
+                    "Retrying in 30 seconds..."
+                )
+            time.sleep(30)
+            continue
+
+        if response.status_code in (429, 500, 502, 503, 504):
+            print(
+                f"{request_name}: HTTP {response.status_code}. "
+                "Retrying in 30 seconds..."
+            )
+            time.sleep(30)
+            continue
+
+        return response
 
 osm_data_file_path = DATA_DIR / "osm_data.json"
 
@@ -87,7 +117,12 @@ else:
     }
 
     # Send a GET request to the URL
-    response = session.get(securite_routiere_url, headers=headers, timeout=120)
+    response = securite_get_with_retry(
+        securite_routiere_url,
+        headers=headers,
+        timeout=120,
+        request_name="Securité Routière list request",
+    )
 
     # Raise an exception if the request was unsuccessful
     response.raise_for_status()
@@ -105,24 +140,33 @@ def fetch_radar_details(radar_id):
     }
     url = f"https://radars.securite-routiere.gouv.fr/radars/{radar_id}"
     print(url)
-    try:
-        response = session.get(url, headers=headers, timeout=60)
-    except requests.RequestException as err:
-        print(f"Skipping radar ID {radar_id}: request failed ({err}).")
-        return None
+    while True:
+        response = securite_get_with_retry(
+            url,
+            headers=headers,
+            timeout=60,
+            request_name=f"Radar ID {radar_id}",
+        )
 
-    if response.status_code == 404:
-        print(f"Skipping radar ID {radar_id}: not found (404).")
-        return None
+        if response.status_code == 404:
+            print(f"Skipping radar ID {radar_id}: not found (404).")
+            return None
 
-    try:
-        response.raise_for_status()
-        return response.json()
-    except requests.RequestException as err:
-        print(f"Skipping radar ID {radar_id}: HTTP error ({err}).")
-    except ValueError as err:
-        print(f"Skipping radar ID {radar_id}: invalid JSON ({err}).")
-    return None
+        try:
+            response.raise_for_status()
+            return response.json()
+        except requests.RequestException as err:
+            print(
+                f"Radar ID {radar_id}: HTTP error ({err}). "
+                "Retrying in 30 seconds..."
+            )
+            time.sleep(30)
+        except ValueError as err:
+            print(
+                f"Radar ID {radar_id}: invalid JSON ({err}). "
+                "Retrying in 30 seconds..."
+            )
+            time.sleep(30)
 
 # Extract the 'type' from each item and count occurrences
 type_counts = Counter(item['type'] for item in securite_routiere_data)
