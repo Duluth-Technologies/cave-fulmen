@@ -1,6 +1,6 @@
 {
   "configVersion": 1,
-  "timestamp": 1770583823530,
+  "timestamp": 1770598759954,
   "index": "/index.html",
   "assetGroups": [
     {
@@ -39,7 +39,7 @@
   "hashTable": {
     "/assets/blank.mp4": "0a784cccc5813e83f70a38d8fd2ae877c251723b",
     "/assets/cavefulmen.webp": "210748b2acae3494303a628426c69e9e6e981580",
-    "/assets/data/radars.json": "37fe6477f89770cf8c6a904f3ffc9a78ff5f56cb",
+    "/assets/data/radars.json": "fe2311ec9482bca6600dc72e5c61ddb73b326929",
     "/favicon.ico": "d3a3f947b66ce4cabb843c6bb7d16fdd2bb97ced",
     "/index.html": "3df4ae794338a7a756918f9123bb8964c048ff1f",
     "/main-NZRYDVXQ.js": "1aaba1f26131bd693c2146359b2cdb5888fd3820",
