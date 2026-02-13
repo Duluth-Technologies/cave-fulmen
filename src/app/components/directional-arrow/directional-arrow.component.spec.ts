@@ -157,8 +157,8 @@ describe('DirectionalArrowComponent', () => {
       component.speed = 50;
       fixture.detectChanges();
       
-      const container = fixture.nativeElement.querySelector('.arrow-container');
-      expect(container.style.transform).toBe('rotate(45deg)');
+      const rotator = fixture.nativeElement.querySelector('.arrow-rotator');
+      expect(rotator.style.transform).toBe('rotate(45deg)');
     });
 
     it('should handle 0 degree angle', () => {
@@ -166,8 +166,8 @@ describe('DirectionalArrowComponent', () => {
       component.speed = 50;
       fixture.detectChanges();
       
-      const container = fixture.nativeElement.querySelector('.arrow-container');
-      expect(container.style.transform).toBe('rotate(0deg)');
+      const rotator = fixture.nativeElement.querySelector('.arrow-rotator');
+      expect(rotator.style.transform).toBe('rotate(0deg)');
     });
 
     it('should handle 360 degree angle', () => {
@@ -175,8 +175,8 @@ describe('DirectionalArrowComponent', () => {
       component.speed = 50;
       fixture.detectChanges();
       
-      const container = fixture.nativeElement.querySelector('.arrow-container');
-      expect(container.style.transform).toBe('rotate(360deg)');
+      const rotator = fixture.nativeElement.querySelector('.arrow-rotator');
+      expect(rotator.style.transform).toBe('rotate(360deg)');
     });
 
     it('should handle negative angles', () => {
@@ -184,8 +184,20 @@ describe('DirectionalArrowComponent', () => {
       component.speed = 50;
       fixture.detectChanges();
       
+      const rotator = fixture.nativeElement.querySelector('.arrow-rotator');
+      expect(rotator.style.transform).toBe('rotate(-45deg)');
+    });
+
+    it('should keep rotation applied while pulsing', () => {
+      component.angle = 90;
+      component.speed = 50;
+      component.distance = 0.5;
+      fixture.detectChanges();
+
+      const rotator = fixture.nativeElement.querySelector('.arrow-rotator');
       const container = fixture.nativeElement.querySelector('.arrow-container');
-      expect(container.style.transform).toBe('rotate(-45deg)');
+      expect(container.classList.contains('pulsing')).toBeTrue();
+      expect(rotator.style.transform).toBe('rotate(90deg)');
     });
   });
 

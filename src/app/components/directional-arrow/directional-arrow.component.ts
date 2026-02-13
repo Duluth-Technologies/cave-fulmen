@@ -37,22 +37,25 @@ export const ARROW_THRESHOLDS = {
       class="arrow-container"
       [class.visible]="isVisible()"
       [class.pulsing]="isPulsing()"
-      [style.transform]="rotationTransform()"
       role="img"
       [attr.aria-label]="ariaLabel()"
       [attr.aria-hidden]="!isVisible()"
     >
-      <svg 
-        class="arrow-svg"
-        viewBox="0 0 100 100"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <!-- Large arrow design for Requirement 8.1 -->
-        <polygon 
-          class="arrow-shape"
-          points="50,5 90,75 70,75 70,95 30,95 30,75 10,75"
-        />
-      </svg>
+      <div class="arrow-rotator" [style.transform]="rotationTransform()">
+        <div class="arrow-pulser">
+          <svg 
+            class="arrow-svg"
+            viewBox="0 0 100 100"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <!-- Large arrow design for Requirement 8.1 -->
+            <polygon 
+              class="arrow-shape"
+              points="50,5 90,75 70,75 70,95 30,95 30,75 10,75"
+            />
+          </svg>
+        </div>
+      </div>
     </div>
   `,
   styles: [`
@@ -63,8 +66,7 @@ export const ARROW_THRESHOLDS = {
       /* Hidden by default, shown when visible class is applied */
       opacity: 0;
       pointer-events: none;
-      /* Requirement 8.5: Smooth rotation transitions */
-      transition: opacity 0.3s ease, transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: opacity 0.3s ease;
     }
 
     /* Requirements 8.3, 8.4: Visibility based on speed */
@@ -73,10 +75,15 @@ export const ARROW_THRESHOLDS = {
       pointer-events: auto;
     }
 
+    /* Keep rotation isolated from pulsing transform animation */
+    .arrow-rotator {
+      transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
     /* Requirements 9.1, 9.2: Pulsing animation when distance < 1km */
-    .arrow-container.pulsing .arrow-svg {
+    .arrow-container.pulsing .arrow-pulser {
       animation: arrow-pulse 1.2s ease-in-out infinite;
-      transform-origin: center;
+      transform-origin: center center;
     }
 
     /* Requirement 9.2: Noticeable but not distracting animation */
@@ -106,8 +113,8 @@ export const ARROW_THRESHOLDS = {
       filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
     }
 
-    /* Keep rotation on container and pulse on svg to avoid transform conflicts */
-    .arrow-container.pulsing.visible .arrow-svg {
+    /* Keep rotation on rotator and pulse on pulser to avoid transform conflicts */
+    .arrow-container.pulsing.visible .arrow-pulser {
       animation: arrow-pulse 1.2s ease-in-out infinite;
     }
   `]
