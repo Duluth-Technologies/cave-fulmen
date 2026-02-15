@@ -1,1 +1,3 @@
-data
+data/*
+!data/radars.json
+!data/.gitignore

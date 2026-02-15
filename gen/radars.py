@@ -13,6 +13,8 @@ from urllib3.util.retry import Retry
 BASE_DIR = Path(__file__).resolve().parent
 DATA_DIR = BASE_DIR / "data"
 DATA_DIR.mkdir(parents=True, exist_ok=True)
+ROAD_MAXSPEED_CACHE_PATH = DATA_DIR / "road_maxspeed_cache.json"
+MISSING_SPEED_DEBUG_PATH = DATA_DIR / "missing_speed_debug.json"
 
 parser = argparse.ArgumentParser(description="Download and build radar dataset.")
 parser.add_argument(
@@ -69,6 +71,239 @@ def securite_get_with_retry(url, headers, timeout, request_name):
             continue
 
         return response
+
+
+if ROAD_MAXSPEED_CACHE_PATH.exists():
+    with open(ROAD_MAXSPEED_CACHE_PATH, 'r', encoding='utf-8') as f:
+        road_maxspeed_cache = json.load(f)
+else:
+    road_maxspeed_cache = {}
+road_maxspeed_cache_dirty = False
+
+
+def normalize_maxspeed(raw_maxspeed):
+    if raw_maxspeed is None:
+        return None
+    if isinstance(raw_maxspeed, list):
+        for value in raw_maxspeed:
+            normalized = normalize_maxspeed(value)
+            if normalized is not None:
+                return normalized
+        return None
+
+    text = str(raw_maxspeed).strip()
+    if not text:
+        return None
+
+    match = re.search(r'\d+', text)
+    if match:
+        return match.group(0)
+    return None
+
+
+def extract_way_maxspeed(tags, element_id=None):
+    # For directional limits, keep the stricter value so we do not overestimate.
+    direct_maxspeed = normalize_maxspeed(tags.get('maxspeed'))
+    if direct_maxspeed is not None:
+        return direct_maxspeed
+
+    forward_maxspeed = normalize_maxspeed(tags.get('maxspeed:forward'))
+    backward_maxspeed = normalize_maxspeed(tags.get('maxspeed:backward'))
+
+    candidates = []
+    if forward_maxspeed is not None:
+        candidates.append(int(forward_maxspeed))
+    if backward_maxspeed is not None:
+        candidates.append(int(backward_maxspeed))
+
+    if not candidates:
+        return None
+
+    selected = str(min(candidates))
+    print(
+        f"[ROAD MAXSPEED] way_id={element_id}: no maxspeed tag; "
+        f"using min(maxspeed:forward={forward_maxspeed!r}, "
+        f"maxspeed:backward={backward_maxspeed!r}) -> {selected}."
+    )
+    return selected
+
+
+def latlon_to_local_xy_m(lat, lon, ref_lat, ref_lon):
+    lat_scale = 111320.0
+    lon_scale = 111320.0 * math.cos(math.radians(ref_lat))
+    x = (lon - ref_lon) * lon_scale
+    y = (lat - ref_lat) * lat_scale
+    return x, y
+
+
+def point_to_segment_distance_m(px, py, ax, ay, bx, by):
+    abx = bx - ax
+    aby = by - ay
+    apx = px - ax
+    apy = py - ay
+    ab_len_sq = abx * abx + aby * aby
+    if ab_len_sq == 0:
+        return math.hypot(apx, apy)
+
+    t = (apx * abx + apy * aby) / ab_len_sq
+    if t < 0:
+        t = 0
+    elif t > 1:
+        t = 1
+
+    closest_x = ax + t * abx
+    closest_y = ay + t * aby
+    return math.hypot(px - closest_x, py - closest_y)
+
+
+def point_to_way_distance_m(lat, lon, way_geometry):
+    if not isinstance(way_geometry, list) or len(way_geometry) < 2:
+        return None
+
+    px, py = latlon_to_local_xy_m(lat, lon, lat, lon)
+    best_distance = None
+    previous = None
+    for current in way_geometry:
+        if not isinstance(current, dict) or 'lat' not in current or 'lon' not in current:
+            previous = current
+            continue
+        if previous is None or 'lat' not in previous or 'lon' not in previous:
+            previous = current
+            continue
+
+        ax, ay = latlon_to_local_xy_m(previous['lat'], previous['lon'], lat, lon)
+        bx, by = latlon_to_local_xy_m(current['lat'], current['lon'], lat, lon)
+        segment_distance = point_to_segment_distance_m(px, py, ax, ay, bx, by)
+        if best_distance is None or segment_distance < best_distance:
+            best_distance = segment_distance
+        previous = current
+
+    return best_distance
+
+
+def fetch_nearby_road_maxspeed(lat, lon, search_radius_m=60):
+    global road_maxspeed_cache_dirty
+
+    cache_key = f"{lat:.6f},{lon:.6f}"
+    if cache_key in road_maxspeed_cache:
+        print(
+            f"[ROAD MAXSPEED] cache hit for {cache_key}: "
+            f"{road_maxspeed_cache[cache_key]!r}"
+        )
+        return road_maxspeed_cache[cache_key]
+    print(
+        f"[ROAD MAXSPEED] cache miss for {cache_key}; "
+        f"querying roads within {search_radius_m}m."
+    )
+
+    overpass_url = "https://overpass-api.de/api/interpreter"
+    overpass_query = f"""
+    [out:json][timeout:90];
+    (
+      way(around:{search_radius_m},{lat},{lon})["highway"]["maxspeed"];
+      way(around:{search_radius_m},{lat},{lon})["highway"]["maxspeed:forward"];
+      way(around:{search_radius_m},{lat},{lon})["highway"]["maxspeed:backward"];
+    );
+    out tags geom;
+    """
+    headers = {
+        "Accept": "application/json",
+        "User-Agent": "curl/7.68.0",
+    }
+
+    while True:
+        try:
+            response = session.get(
+                overpass_url,
+                params={'data': overpass_query},
+                headers=headers,
+                timeout=120,
+            )
+        except requests.RequestException as err:
+            print(
+                f"Overpass road maxspeed request failed ({err}) for {cache_key}. "
+                "Retrying in 30 seconds..."
+            )
+            time.sleep(30)
+            continue
+
+        if response.status_code in (429, 500, 502, 503, 504):
+            print(
+                f"Overpass road maxspeed request got HTTP {response.status_code} for {cache_key}. "
+                "Retrying in 30 seconds..."
+            )
+            time.sleep(30)
+            continue
+
+        if response.status_code >= 400:
+            print(
+                f"Overpass road maxspeed request got HTTP {response.status_code} for {cache_key}. "
+                "Skipping road maxspeed fallback for this radar."
+            )
+            road_maxspeed_cache[cache_key] = None
+            road_maxspeed_cache_dirty = True
+            return None
+
+        try:
+            response_json = response.json()
+        except ValueError as err:
+            print(
+                f"Overpass road maxspeed response is invalid JSON ({err}) for {cache_key}. "
+                "Retrying in 30 seconds..."
+            )
+            time.sleep(30)
+            continue
+
+        best_distance = None
+        best_maxspeed = None
+        candidate_count = 0
+        for element in response_json.get('elements', []):
+            element_id = element.get('id')
+            tags = element.get('tags', {})
+            normalized_maxspeed = extract_way_maxspeed(tags, element_id=element_id)
+            geometry = element.get('geometry')
+            if normalized_maxspeed is None or geometry is None:
+                print(
+                    f"[ROAD MAXSPEED] ignoring way_id={element_id}: "
+                    f"maxspeed={tags.get('maxspeed')!r}, "
+                    f"maxspeed:forward={tags.get('maxspeed:forward')!r}, "
+                    f"maxspeed:backward={tags.get('maxspeed:backward')!r}, "
+                    f"geometry_present={geometry is not None}"
+                )
+                continue
+
+            distance = point_to_way_distance_m(lat, lon, geometry)
+            if distance is None:
+                print(
+                    f"[ROAD MAXSPEED] ignoring way_id={element_id}: "
+                    "could not compute geometry distance."
+                )
+                continue
+            candidate_count += 1
+            print(
+                f"[ROAD MAXSPEED] candidate way_id={element_id}: "
+                f"maxspeed={normalized_maxspeed}, distance_m={distance:.2f}"
+            )
+            if best_distance is None or distance < best_distance:
+                best_distance = distance
+                best_maxspeed = normalized_maxspeed
+                print(
+                    f"[ROAD MAXSPEED] new best way_id={element_id}: "
+                    f"maxspeed={best_maxspeed}, distance_m={best_distance:.2f}"
+                )
+
+        if candidate_count == 0:
+            print(
+                f"[ROAD MAXSPEED] no usable road candidate found for {cache_key}."
+            )
+        else:
+            print(
+                f"[ROAD MAXSPEED] selected maxspeed={best_maxspeed} "
+                f"for {cache_key} from {candidate_count} candidate roads."
+            )
+        road_maxspeed_cache[cache_key] = best_maxspeed
+        road_maxspeed_cache_dirty = True
+        return best_maxspeed
 
 osm_data_file_path = DATA_DIR / "osm_data.json"
 
@@ -216,6 +451,7 @@ def compute_distance_in_km(lat1, lon1, lat2, lon2):
 
 result = []
 detail_lookups = 0
+missing_speed_debug = []
               
 for item in securite_routiere_data:
     if args.limit is not None and detail_lookups >= args.limit:
@@ -245,19 +481,42 @@ for item in securite_routiere_data:
     elif item['type'] == 'itineraire':
         detail_lookups += 1
         id = item['id']
+        print(
+            f"[ITINERAIRE] Processing {id} at ({item['lat']}, {item['lng']}) "
+            f"[detail lookup #{detail_lookups}]"
+        )
         securite_routiere_radar = fetch_radar_details(id)
         if securite_routiere_radar is None:
+            print(f"[ITINERAIRE] Skipping {id}: detail fetch failed.")
             continue
         try:
             radius = float(securite_routiere_radar['radartronconkm'])
         except (ValueError, TypeError):
             radius = 30.0
+            print(f"[ITINERAIRE] {id}: invalid radartronconkm, fallback radius={radius} km.")
         radars_within_radius = find_radars_in_osm_data(item['lat'], item['lng'], osm_data, radius)
+        print(
+            f"[ITINERAIRE] {id}: found {len(radars_within_radius)} OSM radar candidates "
+            f"within {radius} km."
+        )
         if len(radars_within_radius) == 0:
             print(f"No radar found within {radius} km of the coordinates {item['lat']}, {item['lng']}.")
-        for closest_radar in radars_within_radius:
-            print(f"Closest radar found within {radius} km of the coordinates {item['lat']}, {item['lng']}")
+        for radar_index, closest_radar in enumerate(radars_within_radius, start=1):
+            radar_id = closest_radar.get('id')
+            radar_lat = closest_radar.get('lat')
+            radar_lon = closest_radar.get('lon')
+            tags = closest_radar.get('tags', {})
+            node_maxspeed = tags.get('maxspeed')
+            print(
+                f"[OSM RADAR] {id} candidate #{radar_index}: "
+                f"node_id={radar_id}, coords=({radar_lat}, {radar_lon}), "
+                f"node_maxspeed={node_maxspeed!r}, tags={tags}"
+            )
             if 'tags' in closest_radar and 'maxspeed' in closest_radar['tags']:
+                print(
+                    f"[OSM RADAR] {id} node_id={radar_id}: using node maxspeed="
+                    f"{closest_radar['tags']['maxspeed']!r}."
+                )
                 result.append({
                 'latitude': closest_radar['lat'],
                 'longitude': closest_radar['lon'],
@@ -265,12 +524,42 @@ for item in securite_routiere_data:
                 'source': "osm"
                 })
             else:
-                print(f"No speed limit found for the closest radar.")
-                result.append({
-                'latitude': closest_radar['lat'],
-                'longitude': closest_radar['lon'],  
-                'source': "osm"
-                })                    
+                road_maxspeed = fetch_nearby_road_maxspeed(
+                    closest_radar['lat'],
+                    closest_radar['lon'],
+                )
+                if road_maxspeed is not None:
+                    print(
+                        f"[OSM RADAR] {id} node_id={radar_id}: "
+                        "no node maxspeed; "
+                        f"using nearby road maxspeed={road_maxspeed}."
+                    )
+                    result.append({
+                    'latitude': closest_radar['lat'],
+                    'longitude': closest_radar['lon'],
+                    'speed_limit': road_maxspeed,
+                    'source': "osm"
+                    })
+                else:
+                    print(
+                        f"[OSM RADAR] {id} node_id={radar_id}: "
+                        "no node maxspeed and no nearby road maxspeed found."
+                    )
+                    missing_speed_debug.append({
+                        'itineraire_id': id,
+                        'itineraire_latitude': item['lat'],
+                        'itineraire_longitude': item['lng'],
+                        'radius_km': radius,
+                        'osm_node_id': radar_id,
+                        'osm_radar_latitude': radar_lat,
+                        'osm_radar_longitude': radar_lon,
+                        'osm_tags': tags,
+                    })
+                    result.append({
+                    'latitude': closest_radar['lat'],
+                    'longitude': closest_radar['lon'],
+                    'source': "osm"
+                    })
 
             
             
@@ -309,6 +598,17 @@ if not result and output_file_path.exists() and not args.allow_empty_output:
     if isinstance(existing_data, list):
         result = existing_data
         print(f"Reused existing radar entries: {len(result)}")
+
+if road_maxspeed_cache_dirty:
+    with open(ROAD_MAXSPEED_CACHE_PATH, 'w', encoding='utf-8') as f:
+        json.dump(road_maxspeed_cache, f, ensure_ascii=False, indent=4)
+
+with open(MISSING_SPEED_DEBUG_PATH, 'w', encoding='utf-8') as f:
+    json.dump(missing_speed_debug, f, ensure_ascii=False, indent=4)
+print(
+    f"Saved missing-speed debug entries: {len(missing_speed_debug)} "
+    f"to {MISSING_SPEED_DEBUG_PATH}"
+)
 
 with open(output_file_path, 'w', encoding='utf-8') as f:
     json.dump(result, f, ensure_ascii=False, indent=4)
