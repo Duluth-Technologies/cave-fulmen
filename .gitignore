@@ -18,6 +18,7 @@ gen/data/osm_data.json
 gen/data/securite_routiere_data.json
 gen/data/road_maxspeed_cache.json
 gen/data/missing_speed_debug.json
+gen/data/logs/
 
 # IDEs and editors
 .idea/

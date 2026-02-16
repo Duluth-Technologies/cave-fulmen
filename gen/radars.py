@@ -3,6 +3,7 @@ import json
 import os
 import math
 import time
+import logging
 from collections import Counter
 import re
 from pathlib import Path
@@ -13,6 +14,8 @@ from urllib3.util.retry import Retry
 BASE_DIR = Path(__file__).resolve().parent
 DATA_DIR = BASE_DIR / "data"
 DATA_DIR.mkdir(parents=True, exist_ok=True)
+LOGS_DIR = DATA_DIR / "logs"
+LOGS_DIR.mkdir(parents=True, exist_ok=True)
 ROAD_MAXSPEED_CACHE_PATH = DATA_DIR / "road_maxspeed_cache.json"
 MISSING_SPEED_DEBUG_PATH = DATA_DIR / "missing_speed_debug.json"
 
@@ -28,7 +31,40 @@ parser.add_argument(
     action="store_true",
     help="Allow overwriting output with an empty list when no radar data is collected.",
 )
+parser.add_argument(
+    "--log-file",
+    type=Path,
+    default=None,
+    help="Optional explicit log file path. Defaults to data/logs/radars_YYYYmmdd_HHMMSS.log.",
+)
 args = parser.parse_args()
+
+run_timestamp = time.strftime("%Y%m%d_%H%M%S")
+log_file_path = args.log_file or (LOGS_DIR / f"radars_{run_timestamp}.log")
+log_file_path = Path(log_file_path)
+log_file_path.parent.mkdir(parents=True, exist_ok=True)
+
+logger = logging.getLogger("radars")
+logger.setLevel(logging.DEBUG)
+logger.handlers.clear()
+
+log_formatter = logging.Formatter(
+    fmt="%(asctime)s %(levelname)s %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
+
+file_handler = logging.FileHandler(log_file_path, encoding="utf-8")
+file_handler.setLevel(logging.DEBUG)
+file_handler.setFormatter(log_formatter)
+logger.addHandler(file_handler)
+
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.INFO)
+console_handler.setFormatter(log_formatter)
+logger.addHandler(console_handler)
+
+logger.info("Run started. Log file: %s", log_file_path)
+logger.debug("Args: limit=%r, allow_empty_output=%r", args.limit, args.allow_empty_output)
 
 session = requests.Session()
 retry_policy = Retry(
@@ -50,12 +86,12 @@ def securite_get_with_retry(url, headers, timeout, request_name):
         except requests.RequestException as err:
             err_text = str(err)
             if "RemoteDisconnected" in err_text or "Connection aborted" in err_text:
-                print(
+                logger.warning(
                     f"{request_name}: remote disconnected the connection. "
                     "Retrying in 30 seconds..."
                 )
             else:
-                print(
+                logger.warning(
                     f"{request_name}: request failed ({err}). "
                     "Retrying in 30 seconds..."
                 )
@@ -63,7 +99,7 @@ def securite_get_with_retry(url, headers, timeout, request_name):
             continue
 
         if response.status_code in (429, 500, 502, 503, 504):
-            print(
+            logger.warning(
                 f"{request_name}: HTTP {response.status_code}. "
                 "Retrying in 30 seconds..."
             )
@@ -120,7 +156,7 @@ def extract_way_maxspeed(tags, element_id=None):
         return None
 
     selected = str(min(candidates))
-    print(
+    logger.debug(
         f"[ROAD MAXSPEED] way_id={element_id}: no maxspeed tag; "
         f"using min(maxspeed:forward={forward_maxspeed!r}, "
         f"maxspeed:backward={backward_maxspeed!r}) -> {selected}."
@@ -186,12 +222,12 @@ def fetch_nearby_road_maxspeed(lat, lon, search_radius_m=60):
 
     cache_key = f"{lat:.6f},{lon:.6f}"
     if cache_key in road_maxspeed_cache:
-        print(
+        logger.debug(
             f"[ROAD MAXSPEED] cache hit for {cache_key}: "
             f"{road_maxspeed_cache[cache_key]!r}"
         )
         return road_maxspeed_cache[cache_key]
-    print(
+    logger.debug(
         f"[ROAD MAXSPEED] cache miss for {cache_key}; "
         f"querying roads within {search_radius_m}m."
     )
@@ -220,7 +256,7 @@ def fetch_nearby_road_maxspeed(lat, lon, search_radius_m=60):
                 timeout=120,
             )
         except requests.RequestException as err:
-            print(
+            logger.warning(
                 f"Overpass road maxspeed request failed ({err}) for {cache_key}. "
                 "Retrying in 30 seconds..."
             )
@@ -228,7 +264,7 @@ def fetch_nearby_road_maxspeed(lat, lon, search_radius_m=60):
             continue
 
         if response.status_code in (429, 500, 502, 503, 504):
-            print(
+            logger.warning(
                 f"Overpass road maxspeed request got HTTP {response.status_code} for {cache_key}. "
                 "Retrying in 30 seconds..."
             )
@@ -236,7 +272,7 @@ def fetch_nearby_road_maxspeed(lat, lon, search_radius_m=60):
             continue
 
         if response.status_code >= 400:
-            print(
+            logger.error(
                 f"Overpass road maxspeed request got HTTP {response.status_code} for {cache_key}. "
                 "Skipping road maxspeed fallback for this radar."
             )
@@ -247,7 +283,7 @@ def fetch_nearby_road_maxspeed(lat, lon, search_radius_m=60):
         try:
             response_json = response.json()
         except ValueError as err:
-            print(
+            logger.warning(
                 f"Overpass road maxspeed response is invalid JSON ({err}) for {cache_key}. "
                 "Retrying in 30 seconds..."
             )
@@ -263,7 +299,7 @@ def fetch_nearby_road_maxspeed(lat, lon, search_radius_m=60):
             normalized_maxspeed = extract_way_maxspeed(tags, element_id=element_id)
             geometry = element.get('geometry')
             if normalized_maxspeed is None or geometry is None:
-                print(
+                logger.debug(
                     f"[ROAD MAXSPEED] ignoring way_id={element_id}: "
                     f"maxspeed={tags.get('maxspeed')!r}, "
                     f"maxspeed:forward={tags.get('maxspeed:forward')!r}, "
@@ -274,30 +310,30 @@ def fetch_nearby_road_maxspeed(lat, lon, search_radius_m=60):
 
             distance = point_to_way_distance_m(lat, lon, geometry)
             if distance is None:
-                print(
+                logger.debug(
                     f"[ROAD MAXSPEED] ignoring way_id={element_id}: "
                     "could not compute geometry distance."
                 )
                 continue
             candidate_count += 1
-            print(
+            logger.debug(
                 f"[ROAD MAXSPEED] candidate way_id={element_id}: "
                 f"maxspeed={normalized_maxspeed}, distance_m={distance:.2f}"
             )
             if best_distance is None or distance < best_distance:
                 best_distance = distance
                 best_maxspeed = normalized_maxspeed
-                print(
+                logger.debug(
                     f"[ROAD MAXSPEED] new best way_id={element_id}: "
                     f"maxspeed={best_maxspeed}, distance_m={best_distance:.2f}"
                 )
 
         if candidate_count == 0:
-            print(
+            logger.warning(
                 f"[ROAD MAXSPEED] no usable road candidate found for {cache_key}."
             )
         else:
-            print(
+            logger.debug(
                 f"[ROAD MAXSPEED] selected maxspeed={best_maxspeed} "
                 f"for {cache_key} from {candidate_count} candidate roads."
             )
@@ -308,11 +344,11 @@ def fetch_nearby_road_maxspeed(lat, lon, search_radius_m=60):
 osm_data_file_path = DATA_DIR / "osm_data.json"
 
 if os.path.exists(osm_data_file_path):
-    print("Loading OSM data from JSON file...")
+    logger.info("Loading OSM data from JSON file...")
     with open(osm_data_file_path, 'r', encoding='utf-8') as f:
         osm_data = json.load(f)
 else:
-    print("Querying Overpass API for OSM data...")
+    logger.info("Querying Overpass API for OSM data...")
     # Define the Overpass API query
     overpass_url = "http://overpass-api.de/api/interpreter"
     overpass_query = """
@@ -338,11 +374,11 @@ else:
 securite_routiere_file_path = DATA_DIR / "securite_routiere_data.json"
 
 if os.path.exists(securite_routiere_file_path):
-    print("Loading Securité Routière data from JSON file...")
+    logger.info("Loading Securité Routière data from JSON file...")
     with open(securite_routiere_file_path, 'r', encoding='utf-8') as f:
         securite_routiere_data = json.load(f)
 else:
-    print("Querying Securité Routière API for radar data...")
+    logger.info("Querying Securité Routière API for radar data...")
     securite_routiere_url = "https://radars.securite-routiere.gouv.fr/radars/all"
 
     # Headers including the Accept header
@@ -374,7 +410,7 @@ def fetch_radar_details(radar_id):
         "User-Agent": "curl/7.68.0"
     }
     url = f"https://radars.securite-routiere.gouv.fr/radars/{radar_id}"
-    print(url)
+    logger.debug("Fetching radar details from %s", url)
     while True:
         response = securite_get_with_retry(
             url,
@@ -384,20 +420,20 @@ def fetch_radar_details(radar_id):
         )
 
         if response.status_code == 404:
-            print(f"Skipping radar ID {radar_id}: not found (404).")
+            logger.warning("Skipping radar ID %s: not found (404).", radar_id)
             return None
 
         try:
             response.raise_for_status()
             return response.json()
         except requests.RequestException as err:
-            print(
+            logger.warning(
                 f"Radar ID {radar_id}: HTTP error ({err}). "
                 "Retrying in 30 seconds..."
             )
             time.sleep(30)
         except ValueError as err:
-            print(
+            logger.warning(
                 f"Radar ID {radar_id}: invalid JSON ({err}). "
                 "Retrying in 30 seconds..."
             )
@@ -408,7 +444,7 @@ type_counts = Counter(item['type'] for item in securite_routiere_data)
 
 # Display the results
 for item_type, count in type_counts.items():
-    print(f"Type: {item_type}, Count: {count}")
+    logger.info("Type: %s, Count: %s", item_type, count)
 
 def find_radar_in_osm_data(lat, lon, osm_data):
     for element in osm_data['elements']:
@@ -455,7 +491,7 @@ missing_speed_debug = []
               
 for item in securite_routiere_data:
     if args.limit is not None and detail_lookups >= args.limit:
-        print(f"Reached --limit={args.limit}; stopping detail lookups.")
+        logger.info("Reached --limit=%s; stopping detail lookups.", args.limit)
         break
 
     if item['type'] == 'fixes':
@@ -466,12 +502,18 @@ for item in securite_routiere_data:
             continue
         rules_mesured = securite_routiere_radar.get('rulesmesured', [])
         if len(rules_mesured) != 1:
-            print(f"Radar ID {id} has {len(rules_mesured)} rules measured.")
+            logger.warning("Radar ID %s has %s rules measured.", id, len(rules_mesured))
         else:
             rule = rules_mesured[0]
             macinename = rule.get('macinename', '')
             match = re.search(r'vitesse_vl_(\d+)', macinename)
             speed_limit = int(match.group(1)) if match else None
+            if speed_limit is None:
+                logger.warning(
+                    "Radar ID %s (fixes): unable to parse speed limit from macinename=%r",
+                    id,
+                    macinename,
+                )
             result.append({
                 'speed_limit': speed_limit,
                 'latitude': item['lat'],
@@ -481,39 +523,49 @@ for item in securite_routiere_data:
     elif item['type'] == 'itineraire':
         detail_lookups += 1
         id = item['id']
-        print(
+        logger.info(
             f"[ITINERAIRE] Processing {id} at ({item['lat']}, {item['lng']}) "
             f"[detail lookup #{detail_lookups}]"
         )
         securite_routiere_radar = fetch_radar_details(id)
         if securite_routiere_radar is None:
-            print(f"[ITINERAIRE] Skipping {id}: detail fetch failed.")
+            logger.warning("[ITINERAIRE] Skipping %s: detail fetch failed.", id)
             continue
         try:
             radius = float(securite_routiere_radar['radartronconkm'])
         except (ValueError, TypeError):
             radius = 30.0
-            print(f"[ITINERAIRE] {id}: invalid radartronconkm, fallback radius={radius} km.")
+            logger.warning(
+                "[ITINERAIRE] %s: invalid radartronconkm, fallback radius=%s km.",
+                id,
+                radius,
+            )
         radars_within_radius = find_radars_in_osm_data(item['lat'], item['lng'], osm_data, radius)
-        print(
+        logger.info(
             f"[ITINERAIRE] {id}: found {len(radars_within_radius)} OSM radar candidates "
             f"within {radius} km."
         )
         if len(radars_within_radius) == 0:
-            print(f"No radar found within {radius} km of the coordinates {item['lat']}, {item['lng']}.")
+            logger.warning(
+                "[ITINERAIRE] %s: no OSM radar found within %s km of (%s, %s).",
+                id,
+                radius,
+                item['lat'],
+                item['lng'],
+            )
         for radar_index, closest_radar in enumerate(radars_within_radius, start=1):
             radar_id = closest_radar.get('id')
             radar_lat = closest_radar.get('lat')
             radar_lon = closest_radar.get('lon')
             tags = closest_radar.get('tags', {})
             node_maxspeed = tags.get('maxspeed')
-            print(
+            logger.debug(
                 f"[OSM RADAR] {id} candidate #{radar_index}: "
                 f"node_id={radar_id}, coords=({radar_lat}, {radar_lon}), "
                 f"node_maxspeed={node_maxspeed!r}, tags={tags}"
             )
             if 'tags' in closest_radar and 'maxspeed' in closest_radar['tags']:
-                print(
+                logger.info(
                     f"[OSM RADAR] {id} node_id={radar_id}: using node maxspeed="
                     f"{closest_radar['tags']['maxspeed']!r}."
                 )
@@ -529,7 +581,7 @@ for item in securite_routiere_data:
                     closest_radar['lon'],
                 )
                 if road_maxspeed is not None:
-                    print(
+                    logger.info(
                         f"[OSM RADAR] {id} node_id={radar_id}: "
                         "no node maxspeed; "
                         f"using nearby road maxspeed={road_maxspeed}."
@@ -541,7 +593,7 @@ for item in securite_routiere_data:
                     'source': "osm"
                     })
                 else:
-                    print(
+                    logger.warning(
                         f"[OSM RADAR] {id} node_id={radar_id}: "
                         "no node maxspeed and no nearby road maxspeed found."
                     )
@@ -555,6 +607,16 @@ for item in securite_routiere_data:
                         'osm_radar_longitude': radar_lon,
                         'osm_tags': tags,
                     })
+                    logger.debug(
+                        "[OSM RADAR] missing-speed debug appended for itineraire=%s, node=%s, "
+                        "coords=(%s, %s), radius_km=%s, tags=%s",
+                        id,
+                        radar_id,
+                        radar_lat,
+                        radar_lon,
+                        radius,
+                        tags,
+                    )
                     result.append({
                     'latitude': closest_radar['lat'],
                     'longitude': closest_radar['lon'],
@@ -574,7 +636,11 @@ def remove_duplicates(radars):
                     is_duplicate = True
                     break
                 elif radar['source'] == 'securite_routiere' and unique_radar['source'] == 'osm':
-                    print(f"Replacing OSM radar at coordinates {unique_radar['latitude']}, {unique_radar['longitude']} with Securité Routière radar.")
+                    logger.info(
+                        "Replacing OSM radar at coordinates %s, %s with Securité Routière radar.",
+                        unique_radar['latitude'],
+                        unique_radar['longitude'],
+                    )
                     unique_radars.remove(unique_radar)
                     break
                 else:
@@ -583,32 +649,39 @@ def remove_duplicates(radars):
         if not is_duplicate:
             unique_radars.append(radar)
         else:
-            print(f"Duplicate radar found at coordinates {radar['latitude']}, {radar['longitude']}.")
+            logger.debug(
+                "Duplicate radar found at coordinates %s, %s.",
+                radar['latitude'],
+                radar['longitude'],
+            )
     return unique_radars
 
 result = remove_duplicates(result)
-print(f"Detail lookups attempted: {detail_lookups}")
-print(f"Unique radars written: {len(result)}")
+logger.info("Detail lookups attempted: %s", detail_lookups)
+logger.info("Unique radars written: %s", len(result))
 
 output_file_path = DATA_DIR / "radars.json"
 if not result and output_file_path.exists() and not args.allow_empty_output:
-    print("No radars collected; preserving existing radars.json.")
+    logger.warning("No radars collected; preserving existing radars.json.")
     with open(output_file_path, 'r', encoding='utf-8') as f:
         existing_data = json.load(f)
     if isinstance(existing_data, list):
         result = existing_data
-        print(f"Reused existing radar entries: {len(result)}")
+        logger.info("Reused existing radar entries: %s", len(result))
 
 if road_maxspeed_cache_dirty:
     with open(ROAD_MAXSPEED_CACHE_PATH, 'w', encoding='utf-8') as f:
         json.dump(road_maxspeed_cache, f, ensure_ascii=False, indent=4)
+    logger.info("Updated road maxspeed cache: %s", ROAD_MAXSPEED_CACHE_PATH)
 
 with open(MISSING_SPEED_DEBUG_PATH, 'w', encoding='utf-8') as f:
     json.dump(missing_speed_debug, f, ensure_ascii=False, indent=4)
-print(
-    f"Saved missing-speed debug entries: {len(missing_speed_debug)} "
-    f"to {MISSING_SPEED_DEBUG_PATH}"
+logger.info(
+    "Saved missing-speed debug entries: %s to %s",
+    len(missing_speed_debug),
+    MISSING_SPEED_DEBUG_PATH,
 )
 
 with open(output_file_path, 'w', encoding='utf-8') as f:
     json.dump(result, f, ensure_ascii=False, indent=4)
+logger.info("Saved radar dataset: %s entries to %s", len(result), output_file_path)
